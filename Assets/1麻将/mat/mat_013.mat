@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: mat_013
+  m_Shader: {fileID: 4800000, guid: cceacac4e1ec4434f8abb7f2fb2bc822, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _USEMASKABLEBLOOM_ON
+  m_LightmapFlags: 5
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Dissolve:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DissolveMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 78fa1bc56ea0fd64fa195fc220139cc1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RaoDongTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Tex01:
+        m_Texture: {fileID: 2800000, guid: 78fa1bc56ea0fd64fa195fc220139cc1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Tex01Mask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BloomBias: 0.3
+    - _CullMode: 0
+    - _DissolveRaoDong: 0.2
+    - _DissolveSpeedU1: 0
+    - _DissolveSpeedV1: 0
+    - _DissolveValue2: 0
+    - _DissolveWidth1: 0.1
+    - _Intensity: 2
+    - _InvFade: 1
+    - _Mask01SpeedU: 0
+    - _Mask01SpeedV: 0
+    - _Mask01_ON: 0
+    - _MaxX: 1000
+    - _MaxY: 2000
+    - _MinX: -1000
+    - _MinY: -2000
+    - _RaoDong: 0
+    - _RaoDongTexSpeedU: 0
+    - _RaoDongTexSpeedV: 0
+    - _SoftaDissolve1: 0
+    - _Tex01Rotator: 0
+    - _TexSpeedU: 0
+    - _TexSpeedV: 0
+    - _Texture_R_A: 0
+    - _UseCustSpeed: 0
+    - _UseDissolve: 0
+    - _UseDissolveMask: 0
+    - _UseMaskableBloom: 1
+    - _UseParCustom: 0
+    - _UseRaoDong1: 0
+    - _dst: 1
+    m_Colors:
+    - _BloomModColor: {r: 1, g: 1, b: 1, a: 1}
+    - _DissolveColor1: {r: 0, g: 0, b: 0, a: 0}
+    - _Tex01Color: {r: 1, g: 1, b: 1, a: 1}
+    - _TintColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
+  m_BuildTextureStacks: []
