@@ -79,18 +79,12 @@ ExportedObj/
 *.VC.db
 
 # 不需要上传的文件夹
-
 Assets/Epic Toon FX/
-
 Assets/CartoonVFX9X/
-
-Assets/WX-WASM-SDK-V2/
-
 Assets/WebGLTemplates/
 
-Assets/Plugins/ByteGame/
-
-Assets/Scripts/Utils/Utils.cs
+# TT分支：忽略微信SDK（只使用字节SDK）
+Assets/WX-WASM-SDK-V2/
 
 # macOS
 
