@@ -86,6 +86,10 @@ Assets/WebGLTemplates/
 # main分支：忽略微信SDK（使用字节SDK）
 Assets/WX-WASM-SDK-V2/
 
+# main分支：SDK相关文件（在main上开发，使用字节SDK版本）
+# 注意：ADManager和Utils在main/TT分支使用字节SDK版本，在wechat分支使用微信SDK版本
+# 这些文件在不同分支会有不同实现，但都在版本控制中，不需要忽略
+
 # macOS
 
 .DS_Store
