@@ -704,13 +704,31 @@ public class StagePanel : BasePanel
 
         if (StageManager.Instance == null) return;
 
-        // 开始冻结协程
-        if (_freezeCoroutine != null)
+        // 检查广告是否可用
+        if (ADManager.Instance == null || !ADManager.Instance.IsAdAvailable())
         {
-            StopCoroutine(_freezeCoroutine);
+            Debug.LogWarning("[StagePanel] 广告不可用，无法使用冰冻功能");
+            return;
         }
-        _freezeCoroutine = StartCoroutine(FreezeFrogsCoroutine(30f));
-        Debug.Log("[StagePanel] 冻结按钮被点击，开始冻结30秒");
+
+        // 通过广告触发冰冻功能
+        ADManager.Instance.ShowRewardedAd(
+            onRewarded: () =>
+            {
+                // 用户看完广告，执行冰冻功能
+                if (_freezeCoroutine != null)
+                {
+                    StopCoroutine(_freezeCoroutine);
+                }
+                _freezeCoroutine = StartCoroutine(FreezeFrogsCoroutine(30f));
+                Debug.Log("[StagePanel] 广告观看完成，开始冻结30秒");
+            },
+            onFailed: (errorMsg) =>
+            {
+                // 用户未看完广告或广告失败，不做任何事情
+                Debug.Log($"[StagePanel] 广告未完成，无法使用冰冻功能: {errorMsg}");
+            }
+        );
     }
 
     /// <summary>
@@ -823,13 +841,31 @@ public class StagePanel : BasePanel
 
         if (StageManager.Instance == null) return;
 
-        // 开始隔离协程
-        if (_isolateCoroutine != null)
+        // 检查广告是否可用
+        if (ADManager.Instance == null || !ADManager.Instance.IsAdAvailable())
         {
-            StopCoroutine(_isolateCoroutine);
+            Debug.LogWarning("[StagePanel] 广告不可用，无法使用隔离功能");
+            return;
         }
-        _isolateCoroutine = StartCoroutine(IsolateFrogsCoroutine(30f));
-        Debug.Log("[StagePanel] 隔离按钮被点击，开始隔离30秒");
+
+        // 通过广告触发隔离功能
+        ADManager.Instance.ShowRewardedAd(
+            onRewarded: () =>
+            {
+                // 用户看完广告，执行隔离功能
+                if (_isolateCoroutine != null)
+                {
+                    StopCoroutine(_isolateCoroutine);
+                }
+                _isolateCoroutine = StartCoroutine(IsolateFrogsCoroutine(30f));
+                Debug.Log("[StagePanel] 广告观看完成，开始隔离30秒");
+            },
+            onFailed: (errorMsg) =>
+            {
+                // 用户未看完广告或广告失败，不做任何事情
+                Debug.Log($"[StagePanel] 广告未完成，无法使用隔离功能: {errorMsg}");
+            }
+        );
     }
 
     /// <summary>
@@ -1015,8 +1051,27 @@ public class StagePanel : BasePanel
 
         if (StageManager.Instance == null) return;
 
-        // 进入投弹模式
-        EnterBombMode();
+        // 检查广告是否可用
+        if (ADManager.Instance == null || !ADManager.Instance.IsAdAvailable())
+        {
+            Debug.LogWarning("[StagePanel] 广告不可用，无法使用炸弹功能");
+            return;
+        }
+
+        // 通过广告触发炸弹功能
+        ADManager.Instance.ShowRewardedAd(
+            onRewarded: () =>
+            {
+                // 用户看完广告，执行炸弹功能
+                EnterBombMode();
+                Debug.Log("[StagePanel] 广告观看完成，进入投弹模式");
+            },
+            onFailed: (errorMsg) =>
+            {
+                // 用户未看完广告或广告失败，不做任何事情
+                Debug.Log($"[StagePanel] 广告未完成，无法使用炸弹功能: {errorMsg}");
+            }
+        );
     }
 
     /// <summary>
