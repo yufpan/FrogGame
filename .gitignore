@@ -88,6 +88,10 @@ Assets/WX-WASM-SDK-V2/
 
 Assets/WebGLTemplates/
 
+Assets/Plugins/ByteGame/
+
+Assets/Scripts/Utils/Utils.cs
+
 # macOS
 
 .DS_Store
@@ -125,8 +129,4 @@ Thumbs.db
 *.swo
 
 *~
-
-# Utils.cs
-
-Assets/Scripts/Utils/Utils.cs
 
