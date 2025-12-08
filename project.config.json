@@ -1,0 +1,20 @@
+{
+  "appid": "",
+  "projectname": "FrogGame",
+  "unity": {
+    "build": {
+      "webgl": "/Users/yufpan/Unity/WebGLBuild/FrogGame_TT/webgl_package-20251208_162456.zip",
+      "native": {
+        "il2cpp": "",
+        "apk": "",
+        "fullApk": ""
+      },
+      "instantGame": ""
+    },
+    "publishType": "AndroidNativeOnly",
+    "starkSdkVersion": "Without StarkSDK",
+    "unityToolsVersion": "",
+    "unityEngineVersion": "2022.3.50f1c1",
+    "arch": ""
+  }
+}
