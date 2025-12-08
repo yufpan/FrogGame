@@ -44,8 +44,10 @@ ExportedObj/
 # 不需要上传的文件夹
 Assets/Epic Toon FX/
 Assets/CartoonVFX9X/
-Assets/WX-WASM-SDK-V2/
 Assets/WebGLTemplates/
+
+# wechat分支：忽略字节SDK（只使用微信SDK）
+Assets/Plugins/ByteGame/
 
 # macOS
 .DS_Store
