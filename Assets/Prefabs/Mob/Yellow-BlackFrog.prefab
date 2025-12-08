@@ -107,6 +107,9 @@ MonoBehaviour:
   _topIcon: {fileID: 3543591416354913294}
   _selectingIcon: {fileID: 21300000, guid: 68aecb5abafc74d32875dcaba657be0b, type: 3}
   _confirmIcon: {fileID: 21300000, guid: e890df1f00e594885af3d1f3ee4a6787, type: 3}
+  warningDuration: 2
+  warningFlashFrequency: 3
+  warningMaterial: {fileID: 2100000, guid: 0e87d47f68a1b4e32b1701eed0aa589a, type: 2}
   blackDurationMin: 3
   blackDurationMax: 4
   yellowDurationMin: 3
