@@ -180,8 +180,8 @@ public class YellowBlackFrog : FrogBase
     {
         while (true)
         {
-            // 如果处于冻结状态，等待直到解除冻结
-            while (isFrozen)
+            // 如果处于冻结状态或隔离状态，等待直到解除
+            while (isFrozen || isIsolated)
             {
                 yield return null;
             }
@@ -190,19 +190,19 @@ public class YellowBlackFrog : FrogBase
 
             if (isBlack)
             {
-                // 当前是黑色，下一个阶段切回黄色
+                // 当前是黑色，下一个阶段切回黄色（不需要预警）
                 duration = GetRandomDuration(blackDurationMin, blackDurationMax);
             }
             else
             {
-                // 当前是黄色，下一个阶段切到黑色
+                // 当前是黄色，下一个阶段切到黑色（需要预警）
                 duration = GetRandomDuration(yellowDurationMin, yellowDurationMax);
             }
 
             yield return new WaitForSeconds(duration);
 
-            // 再次检查是否处于冻结状态
-            if (isFrozen)
+            // 再次检查是否处于冻结状态或隔离状态
+            if (isFrozen || isIsolated)
             {
                 continue;
             }
@@ -214,7 +214,20 @@ public class YellowBlackFrog : FrogBase
                 continue;
             }
 
-            // 切换颜色（只有黑色类型的青蛙才会执行到这里）
+            // 检查是否需要预警（黄色->黑色需要预警）
+            if (WillChangeToWorseColor())
+            {
+                // 开始预警协程
+                yield return StartCoroutine(StartWarning());
+                
+                // 预警期间如果被冻结或隔离，不执行颜色切换
+                if (isFrozen || isIsolated)
+                {
+                    continue;
+                }
+            }
+
+            // 切换颜色
             isBlack = !isBlack;
             ApplyAnimationState();
         }
@@ -338,8 +351,43 @@ public class YellowBlackFrog : FrogBase
     /// </summary>
     protected override void PerformPendingColorChange()
     {
-        isBlack = !isBlack;
-        ApplyAnimationState();
+        // 检查是否需要预警（黄色->黑色需要预警）
+        if (WillChangeToWorseColor())
+        {
+            // 启动预警协程，预警结束后再切换颜色
+            StartCoroutine(PerformPendingColorChangeWithWarning());
+        }
+        else
+        {
+            // 直接切换颜色（黑色->黄色不需要预警）
+            isBlack = !isBlack;
+            ApplyAnimationState();
+        }
+    }
+
+    /// <summary>
+    /// 执行待处理的颜色切换（带预警）
+    /// </summary>
+    private IEnumerator PerformPendingColorChangeWithWarning()
+    {
+        // 开始预警
+        yield return StartCoroutine(StartWarning());
+        
+        // 预警期间如果被冻结或隔离，不执行颜色切换
+        if (!isFrozen && !isIsolated)
+        {
+            isBlack = !isBlack;
+            ApplyAnimationState();
+        }
+    }
+
+    /// <summary>
+    /// 检查是否要变为"更坏颜色"（黄色->黑色需要预警）
+    /// </summary>
+    protected override bool WillChangeToWorseColor()
+    {
+        // 当前是黄色，要变为黑色时需要预警
+        return !isBlack;
     }
 
     /// <summary>

@@ -174,8 +174,8 @@ public class GreenRedFrog : FrogBase
 
         while (true)
         {
-            // 如果处于冻结状态，等待直到解除冻结
-            while (isFrozen)
+            // 如果处于冻结状态或隔离状态，等待直到解除
+            while (isFrozen || isIsolated)
             {
                 yield return null;
             }
@@ -184,19 +184,19 @@ public class GreenRedFrog : FrogBase
 
             if (isRed)
             {
-                // 当前是红色，下一个阶段切回绿色
+                // 当前是红色，下一个阶段切回绿色（不需要预警）
                 duration = GetRandomDuration(redDurationMin, redDurationMax);
             }
             else
             {
-                // 当前是绿色，下一个阶段切到红色
+                // 当前是绿色，下一个阶段切到红色（需要预警）
                 duration = GetRandomDuration(greenDurationMin, greenDurationMax);
             }
 
             yield return new WaitForSeconds(duration);
 
-            // 再次检查是否处于冻结状态
-            if (isFrozen)
+            // 再次检查是否处于冻结状态或隔离状态
+            if (isFrozen || isIsolated)
             {
                 continue;
             }
@@ -206,6 +206,19 @@ public class GreenRedFrog : FrogBase
             {
                 pendingColorChange = true;
                 continue;
+            }
+
+            // 检查是否需要预警（绿色->红色需要预警）
+            if (WillChangeToWorseColor())
+            {
+                // 开始预警协程
+                yield return StartCoroutine(StartWarning());
+                
+                // 预警期间如果被冻结或隔离，不执行颜色切换
+                if (isFrozen || isIsolated)
+                {
+                    continue;
+                }
             }
 
             // 切换颜色（只有红色类型的青蛙才会执行到这里）
@@ -229,8 +242,43 @@ public class GreenRedFrog : FrogBase
     /// </summary>
     protected override void PerformPendingColorChange()
     {
-        isRed = !isRed;
-        ApplyAnimationState();
+        // 检查是否需要预警（绿色->红色需要预警）
+        if (WillChangeToWorseColor())
+        {
+            // 启动预警协程，预警结束后再切换颜色
+            StartCoroutine(PerformPendingColorChangeWithWarning());
+        }
+        else
+        {
+            // 直接切换颜色（红色->绿色不需要预警）
+            isRed = !isRed;
+            ApplyAnimationState();
+        }
+    }
+
+    /// <summary>
+    /// 执行待处理的颜色切换（带预警）
+    /// </summary>
+    private IEnumerator PerformPendingColorChangeWithWarning()
+    {
+        // 开始预警
+        yield return StartCoroutine(StartWarning());
+        
+        // 预警期间如果被冻结或隔离，不执行颜色切换
+        if (!isFrozen && !isIsolated)
+        {
+            isRed = !isRed;
+            ApplyAnimationState();
+        }
+    }
+
+    /// <summary>
+    /// 检查是否要变为"更坏颜色"（绿色->红色需要预警）
+    /// </summary>
+    protected override bool WillChangeToWorseColor()
+    {
+        // 当前是绿色，要变为红色时需要预警
+        return !isRed;
     }
 
     /// <summary>

@@ -23,7 +23,21 @@ public abstract class FrogBase : MonoBehaviour
     [SerializeField] protected Sprite _selectingIcon;
     [SerializeField] protected Sprite _confirmIcon;
 
+    [Header("预警设置")]
+    [Tooltip("预警持续时间（秒）")]
+    [Min(0f)]
+    [SerializeField] protected float warningDuration = 2.0f;
+
+    [Tooltip("每秒闪烁次数（例如：3表示每秒闪烁3次）")]
+    [Min(0.1f)]
+    [SerializeField] protected float warningFlashFrequency = 3.0f;
+
+    [Tooltip("预警闪烁材质（用于高亮显示）")]
+    [SerializeField] protected Material warningMaterial;
+
     protected SpriteRenderer _topIconRenderer;
+    protected SpriteRenderer spriteRenderer;
+    protected Material originalMaterial;
 
     // Animator 参数名称常量（所有青蛙共用）
     protected const string PARAM_PLAY_JUMP = "PlayJump";
@@ -47,6 +61,9 @@ public abstract class FrogBase : MonoBehaviour
     // 保存原始透明度，用于隔离解除后恢复
     private float originalAlpha = 1f;
 
+    // 是否正在预警（预警期间保持安全颜色，预警结束后才变色）
+    protected bool isWarning = false;
+
     /// <summary>
     /// 子类必须实现：把当前状态应用到 Animator（例如设置颜色相关的参数）。
     /// </summary>
@@ -57,6 +74,14 @@ public abstract class FrogBase : MonoBehaviour
     /// 由基类的 JumpEnd 调用。
     /// </summary>
     protected abstract void PerformPendingColorChange();
+
+    /// <summary>
+    /// 子类必须实现：检查是否要变为"更坏颜色"（需要预警）。
+    /// 绿红青蛙：绿色->红色需要预警
+    /// 黄黑青蛙：黄色->黑色需要预警
+    /// </summary>
+    /// <returns>如果要变为更坏颜色返回true，否则返回false</returns>
+    protected abstract bool WillChangeToWorseColor();
 
     /// <summary>
     /// Reset 时自动尝试获取 Animator。
@@ -83,6 +108,13 @@ public abstract class FrogBase : MonoBehaviour
             Debug.LogWarning($"[{GetType().Name}] 未找到 Animator，动画控制将不会生效。", this);
         }
 
+        // 获取SpriteRenderer组件并保存原始材质
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            originalMaterial = spriteRenderer.material;
+        }
+
         CacheTopIconRenderer();
         // 默认隐藏头顶图标
         SetTopIconActive(false);
@@ -93,6 +125,13 @@ public abstract class FrogBase : MonoBehaviour
         // 基类只重置通用状态；颜色初始化由子类负责
         isJumping = false;
         pendingColorChange = false;
+        isWarning = false;
+
+        // 恢复原始材质（如果之前使用了预警材质）
+        if (spriteRenderer != null && originalMaterial != null)
+        {
+            spriteRenderer.material = originalMaterial;
+        }
 
         // 确保进入可交互时不残留图标状态
         SetTopIconActive(false);
@@ -209,8 +248,8 @@ public abstract class FrogBase : MonoBehaviour
             animator.SetBool(PARAM_IS_JUMPING, false);
         }
 
-        // 如果有待处理的颜色切换，现在执行（只有在未冻结时）
-        if (pendingColorChange && !isFrozen)
+        // 如果有待处理的颜色切换，现在执行（只有在未冻结且未隔离时）
+        if (pendingColorChange && !isFrozen && !isIsolated)
         {
             pendingColorChange = false;
             PerformPendingColorChange();
@@ -372,6 +411,52 @@ public abstract class FrogBase : MonoBehaviour
             _topIcon.SetActive(active);
         }
     }
+
+    /// <summary>
+    /// 开始预警：闪烁高亮本体
+    /// </summary>
+    protected IEnumerator StartWarning()
+    {
+        if (warningMaterial == null || spriteRenderer == null)
+        {
+            Debug.LogWarning($"[{GetType().Name}] 预警材质或SpriteRenderer未设置，无法显示预警效果。", this);
+            yield break;
+        }
+
+        isWarning = true;
+
+        // 切换到预警材质并创建实例（避免影响共享材质）
+        Material warningMatInstance = new Material(warningMaterial);
+        spriteRenderer.material = warningMatInstance;
+        
+        // 设置闪烁频率（Shader中的_FlashSpeed参数）
+        // 每秒闪烁N次，需要每秒完成N个完整周期（sin的周期是2π）
+        // 所以FlashSpeed = 2π * 每秒闪烁次数
+        float flashSpeed = warningFlashFrequency * 2f * Mathf.PI;
+        warningMatInstance.SetFloat("_FlashSpeed", flashSpeed);
+
+        // 等待预警持续时间
+        yield return new WaitForSeconds(warningDuration);
+
+        // 恢复原始材质
+        if (spriteRenderer != null && originalMaterial != null)
+        {
+            spriteRenderer.material = originalMaterial;
+        }
+
+        // 清理临时材质实例
+        if (warningMatInstance != null)
+        {
+            Destroy(warningMatInstance);
+        }
+
+        isWarning = false;
+    }
+
+    /// <summary>
+    /// 获取是否正在预警（只读）
+    /// </summary>
+    public bool IsWarning => isWarning;
 }
 
 
