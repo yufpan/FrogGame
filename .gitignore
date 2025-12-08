@@ -73,3 +73,7 @@ Thumbs.db
 *.swo
 *~
 
+
+# wechat分支：SDK相关文件（单独开发微信SDK版本）
+# 注意：ADManager和Utils在wechat分支使用微信SDK版本，与main/TT分支的字节SDK版本不同
+# 这些文件在不同分支会有不同实现，但都在版本控制中，不需要忽略
