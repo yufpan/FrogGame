@@ -11,6 +11,7 @@ public class MenuPanel : BasePanel
     [SerializeField] private Button _startButton;
     [SerializeField] private TextMeshProUGUI _stageCountText;
     [SerializeField] private TextMeshProUGUI _energyText;
+    [SerializeField] private TextMeshProUGUI _coinText;
     [SerializeField] private GameObject _startText;
     
     [Header("开始文本动画配置")]
@@ -31,10 +32,14 @@ public class MenuPanel : BasePanel
         // 更新体力显示
         UpdateEnergyText();
 
+        // 更新金币显示
+        UpdateCoinText();
+
         // 订阅体力变化事件
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnEnergyChanged += OnEnergyChanged;
+            GameManager.Instance.OnCoinsChanged += OnCoinsChanged;
         }
         
         // 启动开始文本缩放动画
@@ -58,6 +63,7 @@ public class MenuPanel : BasePanel
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnEnergyChanged -= OnEnergyChanged;
+            GameManager.Instance.OnCoinsChanged -= OnCoinsChanged;
         }
         
         // 停止开始文本缩放动画
@@ -112,6 +118,26 @@ public class MenuPanel : BasePanel
     private void OnEnergyChanged(int newEnergy)
     {
         UpdateEnergyText();
+    }
+
+    /// <summary>
+    /// 更新金币文本显示
+    /// </summary>
+    private void UpdateCoinText()
+    {
+        if (_coinText != null && GameManager.Instance != null)
+        {
+            int currentCoins = GameManager.Instance.CurrentCoins;
+            _coinText.text = currentCoins.ToString();
+        }
+    }
+
+    /// <summary>
+    /// 金币变化事件回调
+    /// </summary>
+    private void OnCoinsChanged(int newCoins)
+    {
+        UpdateCoinText();
     }
     private void OnSettingButtonClick()
     {

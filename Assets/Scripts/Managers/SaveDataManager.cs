@@ -19,6 +19,7 @@ public class SaveDataManager : MonoBehaviour
     private const string KEY_LAST_ENERGY_UPDATE_TIME = "LastEnergyUpdateTime";
     private const string KEY_DAILY_ENERGY_GET_DATE = "DailyEnergyGetDate";
     private const string KEY_DAILY_ENERGY_GET_COUNT = "DailyEnergyGetCount";
+    private const string KEY_CURRENT_COINS = "CurrentCoins";
 
     private void Awake()
     {
@@ -138,6 +139,26 @@ public class SaveDataManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 保存当前金币
+    /// </summary>
+    public void SaveCoins(int coins)
+    {
+        PlayerPrefs.SetInt(KEY_CURRENT_COINS, coins);
+        PlayerPrefs.Save();
+        Debug.Log($"[SaveDataManager] 保存金币: {coins}");
+    }
+
+    /// <summary>
+    /// 加载当前金币
+    /// </summary>
+    public int LoadCoins(int defaultValue = 0)
+    {
+        int coins = PlayerPrefs.GetInt(KEY_CURRENT_COINS, defaultValue);
+        Debug.Log($"[SaveDataManager] 加载金币: {coins}");
+        return coins;
+    }
+
+    /// <summary>
     /// 清除所有存档数据
     /// </summary>
     public void ClearAllData()
@@ -147,6 +168,7 @@ public class SaveDataManager : MonoBehaviour
         PlayerPrefs.DeleteKey(KEY_LAST_ENERGY_UPDATE_TIME);
         PlayerPrefs.DeleteKey(KEY_DAILY_ENERGY_GET_DATE);
         PlayerPrefs.DeleteKey(KEY_DAILY_ENERGY_GET_COUNT);
+        PlayerPrefs.DeleteKey(KEY_CURRENT_COINS);
         PlayerPrefs.Save();
         Debug.Log("[SaveDataManager] 清除所有存档数据");
     }

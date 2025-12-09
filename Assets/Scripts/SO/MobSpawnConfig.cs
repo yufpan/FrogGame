@@ -42,6 +42,10 @@ public class LevelSpawnInfo
     [Min(0)]
     public float timeLimit = 300f;
 
+    [Tooltip("关卡通关金币奖励，默认10个")]
+    [Min(0)]
+    public int coinReward = 10;
+
     [Header("随机模式配置（按颜色数量）")]
     [Min(0)]
     [Tooltip("随机模式下生成的绿色青蛙数量")]

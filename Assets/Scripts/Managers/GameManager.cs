@@ -127,6 +127,21 @@ public class GameManager : MonoBehaviour
     public int DailyEnergyGetRemainCount => _dailyEnergyGetRemainCount;
 
     /// <summary>
+    /// 当前金币
+    /// </summary>
+    private int _currentCoins = 0;
+
+    /// <summary>
+    /// 当前金币（公开属性）
+    /// </summary>
+    public int CurrentCoins => _currentCoins;
+
+    /// <summary>
+    /// 金币变化事件
+    /// </summary>
+    public event Action<int> OnCoinsChanged;
+
+    /// <summary>
     /// 是否已经成功从 BGCanvas/CanGenArea 读取到生成区域
     /// </summary>
     public bool HasGenArea { get; private set; }
@@ -203,6 +218,8 @@ public class GameManager : MonoBehaviour
             _lastEnergyUpdateTime = SaveDataManager.Instance.LoadLastEnergyUpdateTime(GetCurrentTimestamp());
             // 加载每日获取次数
             _dailyEnergyGetRemainCount = SaveDataManager.Instance.LoadDailyEnergyGetCount(MAX_DAILY_ENERGY_GET_COUNT);
+            // 加载金币
+            _currentCoins = SaveDataManager.Instance.LoadCoins(0);
         }
         else
         {
@@ -211,6 +228,7 @@ public class GameManager : MonoBehaviour
             _currentEnergy = MAX_ENERGY;
             _lastEnergyUpdateTime = GetCurrentTimestamp();
             _dailyEnergyGetRemainCount = MAX_DAILY_ENERGY_GET_COUNT;
+            _currentCoins = 0;
         }
     }
 
