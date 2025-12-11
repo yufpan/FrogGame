@@ -20,6 +20,8 @@ public class SaveDataManager : MonoBehaviour
     private const string KEY_DAILY_ENERGY_GET_DATE = "DailyEnergyGetDate";
     private const string KEY_DAILY_ENERGY_GET_COUNT = "DailyEnergyGetCount";
     private const string KEY_CURRENT_COINS = "CurrentCoins";
+    private const string KEY_DAILY_CHALLENGE_DATE = "DailyChallengeDate";
+    private const string KEY_DAILY_CHALLENGE_COUNT = "DailyChallengeCount";
 
     private void Awake()
     {
@@ -159,6 +161,46 @@ public class SaveDataManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 保存每日挑战的日期（格式：yyyy-MM-dd）
+    /// </summary>
+    public void SaveDailyChallengeDate(string date)
+    {
+        PlayerPrefs.SetString(KEY_DAILY_CHALLENGE_DATE, date);
+        PlayerPrefs.Save();
+        Debug.Log($"[SaveDataManager] 保存每日挑战日期: {date}");
+    }
+
+    /// <summary>
+    /// 加载每日挑战的日期
+    /// </summary>
+    public string LoadDailyChallengeDate(string defaultValue = "")
+    {
+        string date = PlayerPrefs.GetString(KEY_DAILY_CHALLENGE_DATE, defaultValue);
+        Debug.Log($"[SaveDataManager] 加载每日挑战日期: {date}");
+        return date;
+    }
+
+    /// <summary>
+    /// 保存每日挑战的剩余次数
+    /// </summary>
+    public void SaveDailyChallengeCount(int count)
+    {
+        PlayerPrefs.SetInt(KEY_DAILY_CHALLENGE_COUNT, count);
+        PlayerPrefs.Save();
+        Debug.Log($"[SaveDataManager] 保存每日挑战剩余次数: {count}");
+    }
+
+    /// <summary>
+    /// 加载每日挑战的剩余次数
+    /// </summary>
+    public int LoadDailyChallengeCount(int defaultValue = 2)
+    {
+        int count = PlayerPrefs.GetInt(KEY_DAILY_CHALLENGE_COUNT, defaultValue);
+        Debug.Log($"[SaveDataManager] 加载每日挑战剩余次数: {count}");
+        return count;
+    }
+
+    /// <summary>
     /// 清除所有存档数据
     /// </summary>
     public void ClearAllData()
@@ -169,6 +211,8 @@ public class SaveDataManager : MonoBehaviour
         PlayerPrefs.DeleteKey(KEY_DAILY_ENERGY_GET_DATE);
         PlayerPrefs.DeleteKey(KEY_DAILY_ENERGY_GET_COUNT);
         PlayerPrefs.DeleteKey(KEY_CURRENT_COINS);
+        PlayerPrefs.DeleteKey(KEY_DAILY_CHALLENGE_DATE);
+        PlayerPrefs.DeleteKey(KEY_DAILY_CHALLENGE_COUNT);
         PlayerPrefs.Save();
         Debug.Log("[SaveDataManager] 清除所有存档数据");
     }

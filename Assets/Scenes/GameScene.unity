@@ -674,6 +674,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mobSpawnConfig: {fileID: 11400000, guid: d0b8d2fb902324cd48fc58549083bbf1, type: 2}
+  dailyChallengeConfig: {fileID: 11400000, guid: 2a85112a2b2004cdbb1c8dc7de43adc7, type: 2}
   frogPrefab: {fileID: 245320416811896798, guid: 7b2add6c0eeaf4eb59f40ae124395162, type: 3}
   specialFrogPrefab: {fileID: 245320416811896798, guid: 8a5d0e4d9aa8b4dd58dde002d6b2adc0, type: 3}
   targetCamera: {fileID: 519420031}
