@@ -20,6 +20,15 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 游戏模式枚举
+    /// </summary>
+    public enum GameMode
+    {
+        Normal,          // 常规关卡
+        DailyChallenge   // 每日挑战
+    }
+
+    /// <summary>
     /// 全局访问的单例实例
     /// </summary>
     public static GameManager Instance { get; private set; }
@@ -28,6 +37,11 @@ public class GameManager : MonoBehaviour
     /// 当前游戏阶段
     /// </summary>
     public GameState CurrentState { get; private set; } = GameState.Start;
+
+    /// <summary>
+    /// 当前游戏模式
+    /// </summary>
+    public GameMode CurrentGameMode { get; private set; } = GameMode.Normal;
 
     /// <summary>
     /// 当前关卡数（从 1 开始）
@@ -82,6 +96,11 @@ public class GameManager : MonoBehaviour
     private const int ENERGY_GET_AMOUNT = 80;
 
     /// <summary>
+    /// 每日挑战的最大次数
+    /// </summary>
+    private const int MAX_DAILY_CHALLENGE_COUNT = 2;
+
+    /// <summary>
     /// 当前体力
     /// </summary>
     private int _currentEnergy = MAX_ENERGY;
@@ -125,6 +144,16 @@ public class GameManager : MonoBehaviour
     /// 每日获取体力剩余次数（公开属性）
     /// </summary>
     public int DailyEnergyGetRemainCount => _dailyEnergyGetRemainCount;
+
+    /// <summary>
+    /// 每日挑战的剩余次数
+    /// </summary>
+    private int _dailyChallengeRemainCount = MAX_DAILY_CHALLENGE_COUNT;
+
+    /// <summary>
+    /// 每日挑战剩余次数（公开属性）
+    /// </summary>
+    public int DailyChallengeRemainCount => _dailyChallengeRemainCount;
 
     /// <summary>
     /// 当前金币
@@ -183,6 +212,9 @@ public class GameManager : MonoBehaviour
         // 检查并刷新每日获取次数
         CheckAndRefreshDailyEnergyGetCount();
         
+        // 检查并刷新每日挑战次数
+        CheckAndRefreshDailyChallengeCount();
+        
         // 计算并恢复离线体力
         RecoverOfflineEnergy();
         
@@ -218,6 +250,8 @@ public class GameManager : MonoBehaviour
             _lastEnergyUpdateTime = SaveDataManager.Instance.LoadLastEnergyUpdateTime(GetCurrentTimestamp());
             // 加载每日获取次数
             _dailyEnergyGetRemainCount = SaveDataManager.Instance.LoadDailyEnergyGetCount(MAX_DAILY_ENERGY_GET_COUNT);
+            // 加载每日挑战次数（会在 CheckAndRefreshDailyChallengeCount 中刷新）
+            _dailyChallengeRemainCount = SaveDataManager.Instance.LoadDailyChallengeCount(MAX_DAILY_CHALLENGE_COUNT);
             // 加载金币
             _currentCoins = SaveDataManager.Instance.LoadCoins(0);
         }
@@ -228,6 +262,7 @@ public class GameManager : MonoBehaviour
             _currentEnergy = MAX_ENERGY;
             _lastEnergyUpdateTime = GetCurrentTimestamp();
             _dailyEnergyGetRemainCount = MAX_DAILY_ENERGY_GET_COUNT;
+            _dailyChallengeRemainCount = MAX_DAILY_CHALLENGE_COUNT;
             _currentCoins = 0;
         }
     }
@@ -268,6 +303,36 @@ public class GameManager : MonoBehaviour
             // 日期相同，加载保存的次数
             _dailyEnergyGetRemainCount = SaveDataManager.Instance.LoadDailyEnergyGetCount(MAX_DAILY_ENERGY_GET_COUNT);
             Debug.Log($"[GameManager] 加载每日获取剩余次数: {_dailyEnergyGetRemainCount}");
+        }
+    }
+
+    /// <summary>
+    /// 检查并刷新每日挑战次数（如果跨天则重置）
+    /// </summary>
+    private void CheckAndRefreshDailyChallengeCount()
+    {
+        if (SaveDataManager.Instance == null)
+        {
+            _dailyChallengeRemainCount = MAX_DAILY_CHALLENGE_COUNT;
+            return;
+        }
+
+        string savedDate = SaveDataManager.Instance.LoadDailyChallengeDate("");
+        string currentDate = GetCurrentDateString();
+
+        // 如果日期不同或者是第一次，重置次数
+        if (string.IsNullOrEmpty(savedDate) || savedDate != currentDate)
+        {
+            _dailyChallengeRemainCount = MAX_DAILY_CHALLENGE_COUNT;
+            SaveDataManager.Instance.SaveDailyChallengeDate(currentDate);
+            SaveDataManager.Instance.SaveDailyChallengeCount(_dailyChallengeRemainCount);
+            Debug.Log($"[GameManager] 新的一天，重置每日挑战次数为: {_dailyChallengeRemainCount}");
+        }
+        else
+        {
+            // 日期相同，加载保存的次数
+            _dailyChallengeRemainCount = SaveDataManager.Instance.LoadDailyChallengeCount(MAX_DAILY_CHALLENGE_COUNT);
+            Debug.Log($"[GameManager] 加载每日挑战剩余次数: {_dailyChallengeRemainCount}");
         }
     }
 
@@ -552,6 +617,9 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState == GameState.Playing) return false;
 
+        // 设置游戏模式为常规关卡
+        CurrentGameMode = GameMode.Normal;
+
         // 检查体力
         if (!HasEnoughEnergy())
         {
@@ -590,6 +658,49 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 外部调用：开始每日挑战（从开始阶段 -> 游戏中）
+    /// </summary>
+    public bool StartDailyChallenge()
+    {
+        if (CurrentState == GameState.Playing) return false;
+
+        // 检查并刷新每日挑战次数（如果跨天则重置）
+        CheckAndRefreshDailyChallengeCount();
+
+        // 检查每日挑战次数
+        if (_dailyChallengeRemainCount <= 0)
+        {
+            Debug.Log("[GameManager] 每日挑战次数已用完");
+            return false;
+        }
+
+        // 设置游戏模式为每日挑战
+        CurrentGameMode = GameMode.DailyChallenge;
+
+        // 消耗每日挑战次数（不消耗体力）
+        _dailyChallengeRemainCount--;
+        SaveDailyChallengeCount();
+
+        // 每日挑战模式下，保持当前关卡数不变（不影响常规关卡进度）
+        // 传入当前关卡数，这样 SetGameState 不会修改关卡进度
+        SetGameState(GameState.Playing, CurrentLevel);
+
+        Debug.Log($"[GameManager] 进入每日挑战模式，剩余次数: {_dailyChallengeRemainCount}，当前关卡: {CurrentLevel}");
+        return true;
+    }
+
+    /// <summary>
+    /// 保存每日挑战次数
+    /// </summary>
+    private void SaveDailyChallengeCount()
+    {
+        if (SaveDataManager.Instance != null)
+        {
+            SaveDataManager.Instance.SaveDailyChallengeCount(_dailyChallengeRemainCount);
+        }
+    }
+
+    /// <summary>
     /// 外部调用：结束当前局游戏，进入结算阶段
     /// </summary>
     public void EndGame()
@@ -623,6 +734,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void ReturnToMenu()
     {
+        // 重置游戏模式为常规关卡
+        CurrentGameMode = GameMode.Normal;
         SetGameState(GameState.Start);
     }
 

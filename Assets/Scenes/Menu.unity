@@ -707,8 +707,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UnlockItemConfig: {fileID: 11400000, guid: 6367d2daaacfc4f06b3c0828041cafec, type: 2}
-  forceLevel: 0
-  inspectorLevel: 3
+  forceLevel: 1
+  inspectorLevel: 6
 --- !u!1001 &2597352487528560798
 PrefabInstance:
   m_ObjectHideFlags: 0

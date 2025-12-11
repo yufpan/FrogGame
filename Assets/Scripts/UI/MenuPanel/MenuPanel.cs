@@ -10,6 +10,9 @@ public class MenuPanel : BasePanel
     [SerializeField] private Button _settingButton;
     [SerializeField] private Button _startButton;
     [SerializeField] private TextMeshProUGUI _stageCountText;
+    [SerializeField] private Button _dailyChallengeButton;
+    [SerializeField] private Sprite _dailyChallengeUnlockedSprite;
+    [SerializeField] private Sprite _dailyChallengeLockedSprite;
     [SerializeField] private TextMeshProUGUI _energyText;
     [SerializeField] private TextMeshProUGUI _coinText;
     [SerializeField] private GameObject _startText;
@@ -19,6 +22,9 @@ public class MenuPanel : BasePanel
     [SerializeField] private float _scaleAnimationDuration = 1f;
     
     private Coroutine _startTextScaleCoroutine;
+    
+    // 每日挑战解锁所需的关卡数
+    private const int DAILY_CHALLENGE_UNLOCK_LEVEL = 5;
     public override void Open()
     {
         base.Open();
@@ -34,6 +40,9 @@ public class MenuPanel : BasePanel
 
         // 更新金币显示
         UpdateCoinText();
+        
+        // 更新每日挑战按钮状态
+        UpdateDailyChallengeButton();
 
         // 订阅体力变化事件
         if (GameManager.Instance != null)
@@ -58,6 +67,12 @@ public class MenuPanel : BasePanel
     {
         _startButton.onClick.RemoveListener(OnStartButtonClick);
         _settingButton.onClick.RemoveListener(OnSettingButtonClick);
+        
+        // 移除每日挑战按钮监听
+        if (_dailyChallengeButton != null)
+        {
+            _dailyChallengeButton.onClick.RemoveAllListeners();
+        }
         
         // 取消订阅体力变化事件
         if (GameManager.Instance != null)
@@ -143,6 +158,96 @@ public class MenuPanel : BasePanel
     {
         PlayButtonSound(false); // 播放普通按钮音效
         UIManager.Instance.OpenPanel("SettingPanel");
+    }
+    
+    /// <summary>
+    /// 更新每日挑战按钮状态（根据当前关卡进度）
+    /// </summary>
+    private void UpdateDailyChallengeButton()
+    {
+        if (_dailyChallengeButton == null)
+        {
+            Debug.LogWarning("[MenuPanel] _dailyChallengeButton 未设置，无法更新每日挑战按钮状态。");
+            return;
+        }
+        
+        // 检查是否解锁（当前关卡 > 5）
+        bool isUnlocked = false;
+        if (GameManager.Instance != null)
+        {
+            isUnlocked = GameManager.Instance.CurrentLevel > DAILY_CHALLENGE_UNLOCK_LEVEL;
+        }
+        
+        // 设置按钮可点击状态
+        _dailyChallengeButton.interactable = isUnlocked;
+        
+        // 更新按钮图标
+        Image buttonImage = _dailyChallengeButton.GetComponent<Image>();
+        if (buttonImage != null)
+        {
+            if (isUnlocked)
+            {
+                // 已解锁：显示解锁图标
+                if (_dailyChallengeUnlockedSprite != null)
+                {
+                    buttonImage.sprite = _dailyChallengeUnlockedSprite;
+                }
+            }
+            else
+            {
+                // 未解锁：显示锁定图标
+                if (_dailyChallengeLockedSprite != null)
+                {
+                    buttonImage.sprite = _dailyChallengeLockedSprite;
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[MenuPanel] 每日挑战按钮上未找到 Image 组件，无法更新图标。");
+        }
+        
+        // 设置按钮点击监听（只在解锁时添加）
+        _dailyChallengeButton.onClick.RemoveAllListeners();
+        if (isUnlocked)
+        {
+            _dailyChallengeButton.onClick.AddListener(OnDailyChallengeButtonClick);
+        }
+        
+        Debug.Log($"[MenuPanel] 每日挑战按钮状态更新：解锁={isUnlocked}, 当前关卡={GameManager.Instance?.CurrentLevel ?? 0}");
+    }
+    
+    /// <summary>
+    /// 每日挑战按钮点击事件
+    /// </summary>
+    private void OnDailyChallengeButtonClick()
+    {
+        PlayButtonSound(false); // 播放普通按钮音效
+        
+        if (GameManager.Instance != null)
+        {
+            // 检查每日挑战次数
+            if (GameManager.Instance.DailyChallengeRemainCount <= 0)
+            {
+                // 显示toast提示
+                if (UIManager.Instance != null)
+                {
+                    ToastPanel toastPanel = UIManager.Instance.GetPanel<ToastPanel>("ToastPanel");
+                    if (toastPanel != null)
+                    {
+                        toastPanel.ShowToast("今日挑战次数已用完");
+                    }
+                }
+                return;
+            }
+            
+            bool success = GameManager.Instance.StartDailyChallenge();
+            if (success)
+            {
+                // 切换到游戏场景
+                SwitchSceneManager.Instance.SwitchSceneWithFade("GameScene", new List<string> { "MenuPanel" }, new List<string> { "StagePanel" });
+            }
+        }
     }
     
     /// <summary>

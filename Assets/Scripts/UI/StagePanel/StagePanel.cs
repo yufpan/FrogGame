@@ -11,12 +11,11 @@ public class StagePanel : BasePanel
 
     [SerializeField] private Button _settingButton;
     [SerializeField] private Transform _healthLayout;
-    [SerializeField] private TextMeshProUGUI _timerText;
     [SerializeField] private Slider _progressSlider;
     [SerializeField] private TextMeshProUGUI _progressText;
+    [SerializeField] private GameObject _levelInfo;
     [SerializeField] private TextMeshProUGUI _stageCountText;
-    [SerializeField] private Button _healButton;
-    [SerializeField] private Button _addTimeButton;
+    [SerializeField] private TextMeshProUGUI _scoreText;
     [SerializeField] private Button _freezeButton;
     [SerializeField] private Button _isolateButton;
     [SerializeField] private Button _bombButton;
@@ -117,17 +116,6 @@ public class StagePanel : BasePanel
             _settingButton.onClick.AddListener(OnSettingButtonClicked);
         }
 
-        if (_healButton != null)
-        {
-            _healButton.onClick.RemoveAllListeners();
-            _healButton.onClick.AddListener(OnHealButtonClicked);
-        }
-
-        if (_addTimeButton != null)
-        {
-            _addTimeButton.onClick.RemoveAllListeners();
-            _addTimeButton.onClick.AddListener(OnAddTimeButtonClicked);
-        }
 
         if (_freezeButton != null)
         {
@@ -153,7 +141,10 @@ public class StagePanel : BasePanel
     /// </summary>
     private void CheckAndOpenTutorial()
     {
-        if (GameManager.Instance != null && GameManager.Instance.CurrentLevel == 1)
+        // 只在常规模式下且是第一关时才打开教程面板
+        if (GameManager.Instance != null 
+            && GameManager.Instance.CurrentLevel == 1 
+            && GameManager.Instance.CurrentGameMode == GameManager.GameMode.Normal)
         {
             // 延迟一帧打开教程面板，确保 StagePanel 完全初始化
             StartCoroutine(OpenTutorialDelayed());
@@ -323,9 +314,9 @@ public class StagePanel : BasePanel
         {
             StageManager.Instance.OnHealthChanged += OnHealthChanged;
             StageManager.Instance.OnFrogCountChanged += OnFrogCountChanged;
-            StageManager.Instance.OnTimerChanged += OnTimerChanged;
             StageManager.Instance.OnStageVictory += OnStageVictory;
             StageManager.Instance.OnStageFailed += OnStageFailed;
+            StageManager.Instance.OnScoreChanged += OnScoreChanged;
         }
 
         // 订阅 GameManager 的状态变化事件，当进入 Playing 状态时刷新关卡号
@@ -344,9 +335,9 @@ public class StagePanel : BasePanel
         {
             StageManager.Instance.OnHealthChanged -= OnHealthChanged;
             StageManager.Instance.OnFrogCountChanged -= OnFrogCountChanged;
-            StageManager.Instance.OnTimerChanged -= OnTimerChanged;
             StageManager.Instance.OnStageVictory -= OnStageVictory;
             StageManager.Instance.OnStageFailed -= OnStageFailed;
+            StageManager.Instance.OnScoreChanged -= OnScoreChanged;
         }
 
         // 取消订阅 GameManager 的状态变化事件
@@ -409,9 +400,55 @@ public class StagePanel : BasePanel
         if (StageManager.Instance != null)
         {
             UpdateHealthDisplay(StageManager.Instance.GetCurrentHealth());
-            _totalFrogCount = StageManager.Instance.GetTotalFrogCount();
-            UpdateProgressBar();
-            UpdateTimerDisplay(StageManager.Instance.GetTimeRemaining());
+            
+            // 检查是否为每日挑战模式
+            bool isDailyChallenge = StageManager.Instance.IsDailyChallengeMode();
+            
+            if (isDailyChallenge)
+            {
+                // 每日挑战模式：隐藏进度条和关卡信息，显示分数
+                if (_progressSlider != null)
+                {
+                    _progressSlider.gameObject.SetActive(false);
+                }
+                if (_progressText != null)
+                {
+                    _progressText.gameObject.SetActive(false);
+                }
+                if (_levelInfo != null)
+                {
+                    _levelInfo.SetActive(false);
+                }
+                if (_scoreText != null)
+                {
+                    _scoreText.gameObject.SetActive(true);
+                    UpdateScoreDisplay(StageManager.Instance.GetDailyChallengeScore());
+                }
+            }
+            else
+            {
+                // 常规关卡模式：显示进度条和关卡信息，隐藏分数
+                if (_progressSlider != null)
+                {
+                    _progressSlider.gameObject.SetActive(true);
+                }
+                if (_progressText != null)
+                {
+                    _progressText.gameObject.SetActive(true);
+                }
+                if (_levelInfo != null)
+                {
+                    _levelInfo.SetActive(true);
+                }
+                if (_scoreText != null)
+                {
+                    _scoreText.gameObject.SetActive(false);
+                }
+                
+                _totalFrogCount = StageManager.Instance.GetTotalFrogCount();
+                UpdateProgressBar();
+            }
+            
             UpdateStageCountText();
         }
     }
@@ -479,25 +516,6 @@ public class StagePanel : BasePanel
         }
     }
 
-    /// <summary>
-    /// 倒计时变化回调
-    /// </summary>
-    private void OnTimerChanged(float timeRemaining)
-    {
-        UpdateTimerDisplay(timeRemaining);
-    }
-
-    /// <summary>
-    /// 更新倒计时显示
-    /// </summary>
-    private void UpdateTimerDisplay(float timeRemaining)
-    {
-        if (_timerText == null) return;
-
-        int minutes = Mathf.FloorToInt(timeRemaining / 60);
-        int seconds = Mathf.FloorToInt(timeRemaining % 60);
-        _timerText.text = $"{minutes:D2}:{seconds:D2}";
-    }
 
     /// <summary>
     /// 更新关卡号显示（使用sprite格式）
@@ -546,10 +564,35 @@ public class StagePanel : BasePanel
     }
 
     /// <summary>
+    /// 分数变化回调（每日挑战模式）
+    /// </summary>
+    private void OnScoreChanged(int score)
+    {
+        UpdateScoreDisplay(score);
+    }
+
+    /// <summary>
+    /// 更新分数显示
+    /// </summary>
+    private void UpdateScoreDisplay(int score)
+    {
+        if (_scoreText != null)
+        {
+            _scoreText.text = $"分数: {score}";
+        }
+    }
+
+    /// <summary>
     /// 关卡胜利回调
     /// </summary>
     private void OnStageVictory()
     {
+        // 每日挑战模式下不应该触发胜利
+        if (StageManager.Instance != null && StageManager.Instance.IsDailyChallengeMode())
+        {
+            return;
+        }
+        
         Debug.Log("[StagePanel] 关卡胜利！开始胜利演出。");
         
         // 关卡胜利后，立即更新关卡进度并保存
@@ -664,31 +707,6 @@ public class StagePanel : BasePanel
         }
     }
 
-    /// <summary>
-    /// 回血按钮点击事件
-    /// </summary>
-    private void OnHealButtonClicked()
-    {
-        PlayButtonSound(false); // 播放普通按钮音效
-        if (StageManager.Instance != null)
-        {
-            StageManager.Instance.HealToFull();
-            Debug.Log("[StagePanel] 回血按钮被点击，血量已回满");
-        }
-    }
-
-    /// <summary>
-    /// 加时间按钮点击事件
-    /// </summary>
-    private void OnAddTimeButtonClicked()
-    {
-        PlayButtonSound(false); // 播放普通按钮音效
-        if (StageManager.Instance != null)
-        {
-            StageManager.Instance.AddTime(120f); // 加2分钟（120秒）
-            Debug.Log("[StagePanel] 加时间按钮被点击，已增加2分钟");
-        }
-    }
 
     /// <summary>
     /// 冻结按钮点击事件

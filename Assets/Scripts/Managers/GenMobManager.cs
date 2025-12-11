@@ -15,6 +15,10 @@ public class GenMobManager : MonoBehaviour
     [Tooltip("怪物生成配置 ScriptableObject")]
     public MobSpawnConfig mobSpawnConfig;
 
+    [Header("每日挑战配置")]
+    [Tooltip("每日挑战配置 ScriptableObject（可选，也可以通过参数传入）")]
+    public DailyChallengeConfig dailyChallengeConfig;
+
     [Header("怪物 Prefab")]
     [Tooltip("红绿青蛙 Prefab（NormalFrog），引用 Assets/Prefabs/Mob/Frog.prefab")]
     public GameObject frogPrefab;
@@ -59,7 +63,24 @@ public class GenMobManager : MonoBehaviour
         if (GameManager.Instance != null &&
             GameManager.Instance.CurrentState == GameManager.GameState.Playing)
         {
-            SpawnLevelMobs(GameManager.Instance.CurrentLevel);
+            // 检查是否为每日挑战模式
+            if (GameManager.Instance.CurrentGameMode == GameManager.GameMode.DailyChallenge)
+            {
+                // 每日挑战模式：使用 DailyChallengeConfig
+                if (dailyChallengeConfig != null)
+                {
+                    SpawnDailyChallengeFrogs(dailyChallengeConfig);
+                }
+                else
+                {
+                    Debug.LogWarning("[GenMobManager] 每日挑战模式但 dailyChallengeConfig 未设置。");
+                }
+            }
+            else
+            {
+                // 常规关卡模式
+                SpawnLevelMobs(GameManager.Instance.CurrentLevel);
+            }
         }
         else    
         {
@@ -511,5 +532,66 @@ public class GenMobManager : MonoBehaviour
         }
 
         return spawned;
+    }
+
+    /// <summary>
+    /// 根据 DailyChallengeConfig 生成每日挑战青蛙
+    /// </summary>
+    /// <param name="config">每日挑战配置</param>
+    /// <param name="initializeStage">是否初始化关卡（重新生成时设为false，只生成青蛙不重置状态）</param>
+    public void SpawnDailyChallengeFrogs(DailyChallengeConfig config, bool initializeStage = true)
+    {
+        if (config == null)
+        {
+            Debug.LogWarning("[GenMobManager] DailyChallengeConfig 为空，无法生成每日挑战青蛙。");
+            return;
+        }
+        
+        Camera cam = targetCamera != null ? targetCamera : Camera.main;
+        if (cam == null)
+        {
+            Debug.LogWarning("[GenMobManager] 找不到相机，无法计算屏幕范围。");
+            return;
+        }
+        
+        int greenCount = config.randomGreenCount;
+        int redCount = config.randomRedCount;
+        int yellowCount = config.randomYellowCount;
+        int blackCount = config.randomBlackCount;
+        
+        int totalCount = greenCount + redCount + yellowCount + blackCount;
+        if (totalCount == 0)
+        {
+            Debug.Log("[GenMobManager] 每日挑战配置的总数量为 0，不生成怪物。");
+            return;
+        }
+        
+        Debug.Log($"[GenMobManager] 开始生成每日挑战青蛙，" +
+                  $"绿色={greenCount}, 红色={redCount}, 黄色={yellowCount}, 黑色={blackCount}, 总数={totalCount}");
+        
+        int spawned = 0;
+        
+        // 按颜色分别生成
+        spawned += SpawnRandomColorFrogs(cam, 0, greenCount);
+        spawned += SpawnRandomColorFrogs(cam, 1, redCount);
+        spawned += SpawnRandomColorFrogs(cam, 2, yellowCount);
+        spawned += SpawnRandomColorFrogs(cam, 3, blackCount);
+        
+        Debug.Log($"[GenMobManager] 每日挑战生成完成，实际生成数量：{spawned}");
+        
+        // 初始化关卡（每日挑战模式，时间限制设为9999秒，实际不会使用）
+        if (StageManager.Instance != null)
+        {
+            if (initializeStage)
+            {
+                // 首次生成：初始化关卡
+                StageManager.Instance.InitializeStage(spawned, 9999f, true, config);
+            }
+            else
+            {
+                // 重新生成：只更新青蛙计数，不重置血量等其他状态
+                StageManager.Instance.UpdateFrogCountOnly(spawned);
+            }
+        }
     }
 }

@@ -13,12 +13,19 @@ public class StageManager : MonoBehaviour
     public static StageManager Instance { get; private set; }
 
     /// <summary>
-    /// 玩家初始血量（可配置）
+    /// 玩家初始血量（常规关卡）
     /// </summary>
     [Header("玩家配置")]
-    [Tooltip("玩家初始血量")]
+    [Tooltip("常规关卡的玩家初始血量")]
     [Min(1)]
     [SerializeField] private int initialHealth = 6;
+
+    /// <summary>
+    /// 每日挑战模式的玩家初始血量
+    /// </summary>
+    [Tooltip("每日挑战模式的玩家初始血量")]
+    [Min(1)]
+    [SerializeField] private int dailyChallengeInitialHealth = 6;
 
     /// <summary>
     /// 青蛙类型枚举
@@ -104,6 +111,21 @@ public class StageManager : MonoBehaviour
     private float finishTime;
 
     /// <summary>
+    /// 是否处于每日挑战模式
+    /// </summary>
+    private bool isDailyChallengeMode = false;
+
+    /// <summary>
+    /// 每日挑战分数
+    /// </summary>
+    private int dailyChallengeScore = 0;
+
+    /// <summary>
+    /// 每日挑战配置
+    /// </summary>
+    private DailyChallengeConfig dailyChallengeConfig = null;
+
+    /// <summary>
     /// 血量变化事件
     /// </summary>
     public event Action<int> OnHealthChanged;
@@ -137,6 +159,11 @@ public class StageManager : MonoBehaviour
     /// </summary>
     public event Action<FailureType> OnStageFailed;
 
+    /// <summary>
+    /// 分数变化事件（每日挑战模式）
+    /// </summary>
+    public event Action<int> OnScoreChanged;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -153,14 +180,32 @@ public class StageManager : MonoBehaviour
     /// </summary>
     /// <param name="totalFrogs">青蛙总数</param>
     /// <param name="timeLimit">倒计时（秒）</param>
-    public void InitializeStage(int totalFrogs, float timeLimit)
+    /// <param name="isDailyChallenge">是否为每日挑战模式</param>
+    /// <param name="config">每日挑战配置（仅每日挑战模式需要）</param>
+    public void InitializeStage(int totalFrogs, float timeLimit, bool isDailyChallenge = false, DailyChallengeConfig config = null)
     {
+        isDailyChallengeMode = isDailyChallenge;
+        dailyChallengeConfig = config;
+        
         totalFrogCount = totalFrogs;
         remainingFrogCount = totalFrogs;
-        currentHealth = initialHealth;
+        
+        // 根据模式使用不同的初始血量
+        if (isDailyChallengeMode)
+        {
+            currentHealth = dailyChallengeInitialHealth;
+            isTimerRunning = false;
+            dailyChallengeScore = 0; // 重置分数
+        }
+        else
+        {
+            currentHealth = initialHealth;
+            isTimerRunning = true;
+        }
+        
         timeRemaining = timeLimit;
         defaultTimeLimit = timeLimit; // 保存默认时间限制
-        isTimerRunning = true;
+        
         isStageEnded = false;
         isClearingStage = false; // 重置清理标志
         stageStartTime = Time.time; // 记录关卡开始时间
@@ -170,12 +215,24 @@ public class StageManager : MonoBehaviour
 
         OnHealthChanged?.Invoke(currentHealth);
         OnFrogCountChanged?.Invoke(remainingFrogCount, totalFrogCount);
-        OnTimerChanged?.Invoke(timeRemaining);
-
-        Debug.Log($"[StageManager] 关卡初始化：总青蛙数={totalFrogs}，倒计时={timeLimit}秒，初始血量={initialHealth}");
         
-        // 如果是第二关，显示警告面板
-        if (GameManager.Instance != null && GameManager.Instance.CurrentLevel == 2 && UIManager.Instance != null)
+        // 每日挑战模式下不触发倒计时事件
+        if (!isDailyChallengeMode)
+        {
+            OnTimerChanged?.Invoke(timeRemaining);
+        }
+        
+        // 每日挑战模式下触发分数事件
+        if (isDailyChallengeMode)
+        {
+            OnScoreChanged?.Invoke(dailyChallengeScore);
+        }
+
+        int usedInitialHealth = isDailyChallengeMode ? dailyChallengeInitialHealth : initialHealth;
+        Debug.Log($"[StageManager] 关卡初始化：总青蛙数={totalFrogs}，倒计时={timeLimit}秒，初始血量={usedInitialHealth}，每日挑战模式={isDailyChallengeMode}");
+        
+        // 如果是第二关，显示警告面板（仅常规关卡）
+        if (!isDailyChallengeMode && GameManager.Instance != null && GameManager.Instance.CurrentLevel == 2 && UIManager.Instance != null)
         {
             UIManager.Instance.OpenPanel("WarningPanel");
         }
@@ -183,6 +240,9 @@ public class StageManager : MonoBehaviour
 
     private void Update()
     {
+        // 每日挑战模式下禁用倒计时
+        if (isDailyChallengeMode) return;
+        
         if (isTimerRunning && !isStageEnded)
         {
             timeRemaining -= Time.deltaTime;
@@ -211,10 +271,26 @@ public class StageManager : MonoBehaviour
         remainingFrogCount = Mathf.Max(0, remainingFrogCount - 1);
         OnFrogCountChanged?.Invoke(remainingFrogCount, totalFrogCount);
 
-        // 检查是否胜利
+        // 每日挑战模式：每消灭一个青蛙得1分
+        if (isDailyChallengeMode)
+        {
+            dailyChallengeScore++;
+            OnScoreChanged?.Invoke(dailyChallengeScore);
+        }
+
+        // 检查是否胜利（常规关卡）或需要重新生成（每日挑战）
         if (remainingFrogCount == 0)
         {
-            CheckStageVictory();
+            if (isDailyChallengeMode)
+            {
+                // 每日挑战：所有青蛙消除完后重新生成
+                StartCoroutine(RespawnDailyChallengeFrogs());
+            }
+            else
+            {
+                // 常规关卡：检查胜利
+                CheckStageVictory();
+            }
         }
     }
     
@@ -228,7 +304,12 @@ public class StageManager : MonoBehaviour
         hasPlayerDraggedBox = true;
         
         // 如果是第一关且还有剩余青蛙，且还没有打开过第二次教程面板，则打开教程面板（显示第二次提示）
-        if (GameManager.Instance != null && GameManager.Instance.CurrentLevel == 1 && remainingFrogCount > 0 && !hasOpenedSecondTutorial)
+        // 只在常规模式下才打开教程面板
+        if (GameManager.Instance != null 
+            && GameManager.Instance.CurrentLevel == 1 
+            && GameManager.Instance.CurrentGameMode == GameManager.GameMode.Normal
+            && remainingFrogCount > 0 
+            && !hasOpenedSecondTutorial)
         {
             if (UIManager.Instance != null)
             {
@@ -274,6 +355,9 @@ public class StageManager : MonoBehaviour
         if (isStageEnded) return;
         if (isClearingStage) return;
         
+        // 每日挑战模式下不触发胜利
+        if (isDailyChallengeMode) return;
+        
         isStageEnded = true;
         isTimerRunning = false;
         // 计算通关时间（从关卡开始到胜利的时间）
@@ -289,6 +373,12 @@ public class StageManager : MonoBehaviour
     {
         if (isStageEnded) return;
 
+        // 每日挑战模式下不触发时间归零失败
+        if (isDailyChallengeMode && failureType == FailureType.TimeOut)
+        {
+            return;
+        }
+
         isStageEnded = true;
         isTimerRunning = false;
         string reason = failureType == FailureType.HealthDepleted ? "血量为0" : "时间归零";
@@ -301,11 +391,12 @@ public class StageManager : MonoBehaviour
     /// </summary>
     public void RestoreHealth()
     {
-        currentHealth = initialHealth;
+        int targetHealth = GetCurrentModeInitialHealth();
+        currentHealth = targetHealth;
         isStageEnded = false;
         isTimerRunning = true;
         OnHealthChanged?.Invoke(currentHealth);
-        Debug.Log($"[StageManager] 恢复血量到初始值：{initialHealth}");
+        Debug.Log($"[StageManager] 恢复血量到初始值：{targetHealth}");
     }
 
     /// <summary>
@@ -321,11 +412,19 @@ public class StageManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 获取初始血量
+    /// 获取初始血量（根据当前模式返回对应的初始血量）
     /// </summary>
     public int GetInitialHealth()
     {
-        return initialHealth;
+        return GetCurrentModeInitialHealth();
+    }
+
+    /// <summary>
+    /// 获取当前模式对应的初始血量
+    /// </summary>
+    private int GetCurrentModeInitialHealth()
+    {
+        return isDailyChallengeMode ? dailyChallengeInitialHealth : initialHealth;
     }
 
     /// <summary>
@@ -375,9 +474,10 @@ public class StageManager : MonoBehaviour
     {
         if (isStageEnded) return;
         
-        currentHealth = initialHealth;
+        int targetHealth = GetCurrentModeInitialHealth();
+        currentHealth = targetHealth;
         OnHealthChanged?.Invoke(currentHealth);
-        Debug.Log($"[StageManager] 回满血量：{initialHealth}");
+        Debug.Log($"[StageManager] 回满血量：{targetHealth}");
     }
 
     /// <summary>
@@ -411,6 +511,55 @@ public class StageManager : MonoBehaviour
         }
         
         return count;
+    }
+
+    /// <summary>
+    /// 重新生成每日挑战青蛙的协程
+    /// </summary>
+    private IEnumerator RespawnDailyChallengeFrogs()
+    {
+        if (dailyChallengeConfig == null || GenMobManager.Instance == null)
+        {
+            Debug.LogWarning("[StageManager] 每日挑战配置或生成管理器为空，无法重新生成青蛙。");
+            yield break;
+        }
+        
+        // 等待一帧确保所有销毁逻辑完成
+        yield return null;
+        
+        // 重新生成青蛙（不初始化关卡，只生成青蛙并更新计数）
+        GenMobManager.Instance.SpawnDailyChallengeFrogs(dailyChallengeConfig, false);
+    }
+
+    /// <summary>
+    /// 获取每日挑战分数
+    /// </summary>
+    public int GetDailyChallengeScore()
+    {
+        return dailyChallengeScore;
+    }
+
+    /// <summary>
+    /// 检查是否为每日挑战模式
+    /// </summary>
+    public bool IsDailyChallengeMode()
+    {
+        return isDailyChallengeMode;
+    }
+
+    /// <summary>
+    /// 仅更新青蛙计数（用于每日挑战重新生成时，不重置血量等其他状态）
+    /// </summary>
+    /// <param name="newTotalFrogs">新的青蛙总数</param>
+    public void UpdateFrogCountOnly(int newTotalFrogs)
+    {
+        totalFrogCount = newTotalFrogs;
+        remainingFrogCount = newTotalFrogs;
+        
+        // 触发事件通知UI更新
+        OnFrogCountChanged?.Invoke(remainingFrogCount, totalFrogCount);
+        
+        Debug.Log($"[StageManager] 每日挑战重新生成：更新青蛙计数，总数={newTotalFrogs}，当前血量={currentHealth}，当前分数={dailyChallengeScore}");
     }
 
     /// <summary>
