@@ -10,14 +10,28 @@ public class WinPanel : BasePanel
 
     [SerializeField] private Button _backButton;
     [SerializeField] private Button _nextStageButton;
-    [SerializeField] private TextMeshProUGUI _finishTimerText;
     [SerializeField] private TextMeshProUGUI _unlockItemText;
     [SerializeField] private Image _unlockItemIcon;
+    [SerializeField] private GameObject _normalStageObject;
+    [SerializeField] private TextMeshProUGUI _normalStageCoinText;
+    [SerializeField] private GameObject _dailyStageObject;
+    [SerializeField] private TextMeshProUGUI _dailyStageCoinText;
+    [SerializeField] private TextMeshProUGUI _dailyStageScoreText;
+    [SerializeField] private TextMeshProUGUI _dailyStageHistoryScoreText;
+
+    /// <summary>
+    /// 是否已经发放过金币（避免重复发放）
+    /// </summary>
+    private bool _hasRewardedCoins = false;
+
 
 
 
     public override void Open()
     {
+        // 重置金币发放标志
+        _hasRewardedCoins = false;
+
         // 绑定按钮事件
         if (_backButton != null)
         {
@@ -28,19 +42,22 @@ public class WinPanel : BasePanel
         {
             _nextStageButton.onClick.AddListener(OnNextStageButtonClick);
         }
-        
-        // 更新通关时间显示
-        UpdateFinishTimer();
-        
-        // 更新解锁物品信息显示
-        UpdateUnlockItemInfo();
+
+        // 根据游戏模式显示不同的面板
+        UpdatePanelDisplay();
+
+        // 更新解锁物品信息显示（仅常规关卡显示）
+        if (GameManager.Instance != null && GameManager.Instance.CurrentGameMode == GameManager.GameMode.Normal)
+        {
+            UpdateUnlockItemInfo();
+        }
 
         // 播放胜利音效
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PauseBGMPlayFXAndResume("Win");
         }
-        
+
         base.Open();
 
     }
@@ -258,23 +275,143 @@ public class WinPanel : BasePanel
     }
 
     /// <summary>
-    /// 更新通关时间显示
+    /// 根据游戏模式更新面板显示
     /// </summary>
-    private void UpdateFinishTimer()
+    private void UpdatePanelDisplay()
     {
-        if (_finishTimerText == null) return;
-        
-        if (StageManager.Instance != null)
+        if (GameManager.Instance == null)
         {
-            float finishTime = StageManager.Instance.GetFinishTime();
-            // 格式化为 "00:00" 格式（分:秒）
-            int minutes = Mathf.FloorToInt(finishTime / 60f);
-            int seconds = Mathf.FloorToInt(finishTime % 60f);
-            _finishTimerText.text = $"{minutes:D2}:{seconds:D2}";
+            Debug.LogWarning("[WinPanel] GameManager.Instance 为 null，无法判断游戏模式。");
+            return;
+        }
+
+        bool isDailyChallenge = GameManager.Instance.CurrentGameMode == GameManager.GameMode.DailyChallenge;
+
+        // 显示/隐藏对应的面板
+        if (_normalStageObject != null)
+        {
+            _normalStageObject.SetActive(!isDailyChallenge);
+        }
+
+        if (_dailyStageObject != null)
+        {
+            _dailyStageObject.SetActive(isDailyChallenge);
+        }
+
+        // 在每日挑战模式下隐藏"下一关"按钮（因为每日挑战失败后应该返回菜单）
+        if (_nextStageButton != null)
+        {
+            _nextStageButton.gameObject.SetActive(!isDailyChallenge);
+        }
+
+        // 根据模式更新显示内容
+        if (isDailyChallenge)
+        {
+            UpdateDailyChallengeDisplay();
         }
         else
         {
-            _finishTimerText.text = "00:00";
+            UpdateNormalStageDisplay();
+        }
+    }
+
+    /// <summary>
+    /// 更新常规关卡显示
+    /// </summary>
+    private void UpdateNormalStageDisplay()
+    {
+        if (_normalStageCoinText == null) return;
+
+        // 读取关卡信息中的金币
+        // 注意：WinPanel 打开时，关卡已经自动+1了，所以需要读取上一关（CurrentLevel - 1）的金币奖励
+        int coinReward = 10; // 默认值
+        if (GenMobManager.Instance != null && GenMobManager.Instance.mobSpawnConfig != null)
+        {
+            int currentLevel = GameManager.Instance != null ? GameManager.Instance.CurrentLevel : 1;
+            int completedLevel = Mathf.Max(1, currentLevel - 1); // 刚刚完成的关卡
+            LevelSpawnInfo levelInfo = GenMobManager.Instance.mobSpawnConfig.GetLevelInfo(completedLevel);
+            if (levelInfo != null)
+            {
+                coinReward = levelInfo.coinReward;
+            }
+        }
+
+        _normalStageCoinText.text = $"x{coinReward}";
+
+        // 发放金币奖励（只发放一次）
+        if (!_hasRewardedCoins && GameManager.Instance != null && coinReward > 0)
+        {
+            GameManager.Instance.AddCoins(coinReward);
+            _hasRewardedCoins = true;
+            Debug.Log($"[WinPanel] 常规关卡胜利，发放金币奖励: +{coinReward}");
+        }
+    }
+
+    /// <summary>
+    /// 更新每日挑战显示
+    /// </summary>
+    private void UpdateDailyChallengeDisplay()
+    {
+        if (StageManager.Instance == null)
+        {
+            Debug.LogWarning("[WinPanel] StageManager.Instance 为 null，无法获取每日挑战分数。");
+            return;
+        }
+
+        // 获取当前得分
+        int currentScore = StageManager.Instance.GetDailyChallengeScore();
+
+        // 获取历史最高分
+        int historyHighestScore = 0;
+        if (SaveDataManager.Instance != null)
+        {
+            historyHighestScore = SaveDataManager.Instance.LoadDailyChallengeHighestScore(0);
+        }
+
+        // 检查是否打破记录
+        bool isNewRecord = currentScore > historyHighestScore;
+        if (isNewRecord)
+        {
+            // 保存新记录
+            if (SaveDataManager.Instance != null)
+            {
+                SaveDataManager.Instance.SaveDailyChallengeHighestScore(currentScore);
+            }
+            historyHighestScore = currentScore; // 两个分数都显示新分数
+        }
+
+        // 更新当前得分显示
+        if (_dailyStageScoreText != null)
+        {
+            _dailyStageScoreText.text = $"本轮挑战积分：{currentScore}";
+        }
+
+        // 更新历史最高分显示
+        if (_dailyStageHistoryScoreText != null)
+        {
+            _dailyStageHistoryScoreText.text = $"历史最高分：{historyHighestScore}";
+        }
+
+        // 计算金币奖励：基础10金币，每200分额外获得20金币
+        int coinReward = 10;
+        if (currentScore >= 200)
+        {
+            int bonusMultiplier = currentScore / 200;
+            coinReward += bonusMultiplier * 20;
+        }
+
+        // 更新金币显示
+        if (_dailyStageCoinText != null)
+        {
+            _dailyStageCoinText.text = $"x{coinReward}";
+        }
+
+        // 发放金币奖励（只发放一次）
+        if (!_hasRewardedCoins && GameManager.Instance != null && coinReward > 0)
+        {
+            GameManager.Instance.AddCoins(coinReward);
+            _hasRewardedCoins = true;
+            Debug.Log($"[WinPanel] 每日挑战结算，发放金币奖励: +{coinReward} (得分: {currentScore})");
         }
     }
 

@@ -3,12 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using TMPro;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using TTSDK;
+using TTSDK.UNBridgeLib.LitJson;
+#endif
 
 public class MenuPanel : BasePanel
 {
     public override string PanelName => "MenuPanel";
     [SerializeField] private Button _settingButton;
     [SerializeField] private Button _startButton;
+    [SerializeField] private Button _sideBarButton;
     [SerializeField] private TextMeshProUGUI _stageCountText;
     [SerializeField] private Button _dailyChallengeButton;
     [SerializeField] private Sprite _dailyChallengeUnlockedSprite;
@@ -31,6 +36,10 @@ public class MenuPanel : BasePanel
 
         _startButton.onClick.AddListener(OnStartButtonClick);
         _settingButton.onClick.AddListener(OnSettingButtonClick);
+        
+        // 检查侧边栏是否可用，并设置侧边栏按钮显示状态
+        CheckSidebarAvailability();
+        
         // 显示当前关卡进度
         int stageCount = GameManager.Instance.CurrentLevel;
         _stageCountText.text = $"第 {stageCount} 关";
@@ -67,6 +76,12 @@ public class MenuPanel : BasePanel
     {
         _startButton.onClick.RemoveListener(OnStartButtonClick);
         _settingButton.onClick.RemoveListener(OnSettingButtonClick);
+        
+        // 移除侧边栏按钮监听
+        if (_sideBarButton != null)
+        {
+            _sideBarButton.onClick.RemoveAllListeners();
+        }
         
         // 移除每日挑战按钮监听
         if (_dailyChallengeButton != null)
@@ -158,6 +173,63 @@ public class MenuPanel : BasePanel
     {
         PlayButtonSound(false); // 播放普通按钮音效
         UIManager.Instance.OpenPanel("SettingPanel");
+    }
+    
+    /// <summary>
+    /// 检查侧边栏是否可用，并设置侧边栏按钮显示状态
+    /// </summary>
+    private void CheckSidebarAvailability()
+    {
+        if (_sideBarButton == null)
+        {
+            Debug.LogWarning("[MenuPanel] _sideBarButton 未设置，无法检查侧边栏可用性。");
+            return;
+        }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // 检查当前宿主是否支持侧边栏
+        TT.CheckScene(TTSideBar.SceneEnum.SideBar,
+            success: (isSupportSide) =>
+            {
+                if (isSupportSide)
+                {
+                    // 宿主支持侧边栏功能，显示按钮并添加点击监听
+                    _sideBarButton.gameObject.SetActive(true);
+                    _sideBarButton.onClick.RemoveAllListeners();
+                    _sideBarButton.onClick.AddListener(OnSideBarButtonClick);
+                    Debug.Log("[MenuPanel] 侧边栏功能可用，显示侧边栏按钮");
+                }
+                else
+                {
+                    // 宿主不支持侧边栏功能，隐藏按钮
+                    _sideBarButton.gameObject.SetActive(false);
+                    Debug.Log("[MenuPanel] 侧边栏功能不可用，隐藏侧边栏按钮");
+                }
+            },
+            complete: () =>
+            {
+                Debug.Log("[MenuPanel] 检查侧边栏可用性完成");
+            },
+            error: (code, msg) =>
+            {
+                // 检查失败，隐藏按钮
+                _sideBarButton.gameObject.SetActive(false);
+                Debug.LogError($"[MenuPanel] 检查侧边栏可用性失败: {code}, {msg}");
+            });
+#else
+        // 编辑器模式下默认隐藏
+        _sideBarButton.gameObject.SetActive(false);
+        Debug.Log("[MenuPanel] 编辑器模式：隐藏侧边栏按钮");
+#endif
+    }
+    
+    /// <summary>
+    /// 侧边栏按钮点击事件
+    /// </summary>
+    private void OnSideBarButtonClick()
+    {
+        PlayButtonSound(false); // 播放普通按钮音效
+        UIManager.Instance.OpenPanel("SideBarPanel");
     }
     
     /// <summary>

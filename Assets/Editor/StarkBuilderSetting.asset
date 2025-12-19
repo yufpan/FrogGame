@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1677285531, guid: 10f6963b6f4db45cba5675324403b501, type: 3}
+  m_Script: {fileID: 1677285531, guid: 7c6a5a81d8a1b47dcaa5279662d9b927, type: 3}
   m_Name: StarkBuilderSetting
   m_EditorClassIdentifier: 
   tag: 0
   wasmResourceUrl: http://
-  OutputDir: /Users/yufpan/Unity/WebGLBuild/FrogGame_TT
+  OutputDir: "/Users/yufpan/Unity/\u840C\u517D\u96C6\u7ED3_\u6296\u97F3/tt-minigame"
   useByteAudioAPI: 0
   wasmMemorySize: 128
   isWebGL2: 1
@@ -49,15 +49,15 @@ MonoBehaviour:
   NativeWhiteListRegex:
   - com.bytedance.starksdk
   - _Backup~
-  _appId: tt6b4d1df0f444d2f102
+  _appId: ttf9aa8f1766afa0d607
   version: 
   autoVersion: 0
-  _webglPackagePath: /Users/yufpan/Unity/WebGLBuild/FrogGame_TT/webgl_package-20251208_162456.zip
+  _webglPackagePath: "/Users/yufpan/Unity/\u840C\u517D\u96C6\u7ED3_\u6296\u97F3/tt-minigame/webgl_package-20251212_211250.zip"
   _orientation: 0
   _iOSPerformancePlus: 0
   _menuButtonStyle: 0
   _publishType: 0
   publishDesc: 
-  idePath: "/Applications/\u6296\u97F3\u5F00\u53D1\u8005\u5DE5\u5177.app"
+  idePath: 
   isConvert: 0
   isOldBuildFormat: 1

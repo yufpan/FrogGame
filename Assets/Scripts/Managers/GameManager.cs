@@ -599,6 +599,31 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 增加金币
+    /// </summary>
+    /// <param name="amount">增加的金币数量</param>
+    public void AddCoins(int amount)
+    {
+        _currentCoins += amount;
+        _currentCoins = Mathf.Max(0, _currentCoins); // 确保金币不为负数
+        OnCoinsChanged?.Invoke(_currentCoins);
+        // 保存金币变化
+        SaveCoins();
+        Debug.Log($"[GameManager] 增加金币: +{amount}，当前金币: {_currentCoins}");
+    }
+
+    /// <summary>
+    /// 保存金币
+    /// </summary>
+    private void SaveCoins()
+    {
+        if (SaveDataManager.Instance != null)
+        {
+            SaveDataManager.Instance.SaveCoins(_currentCoins);
+        }
+    }
+
+    /// <summary>
     /// 保存关卡进度
     /// </summary>
     private void SaveLevel()

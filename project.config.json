@@ -1,20 +1,23 @@
 {
-  "appid": "",
-  "projectname": "FrogGame",
-  "unity": {
-    "build": {
-      "webgl": "/Users/yufpan/Unity/WebGLBuild/FrogGame_TT/webgl_package-20251208_162456.zip",
-      "native": {
-        "il2cpp": "",
-        "apk": "",
-        "fullApk": ""
-      },
-      "instantGame": ""
+    "appid": "ttf9aa8f1766afa0d607",
+    "projectname": "FrogGame",
+    "unity": {
+        "build": {
+            "webgl": "/Users/yufpan/Unity/萌兽集结_抖音/tt-minigame/webgl_package-20251212_211250.zip",
+            "native": {
+                "il2cpp": "",
+                "apk": "",
+                "fullApk": ""
+            },
+            "instantGame": ""
+        },
+        "publishType": "2",
+        "starkSdkVersion": "Without StarkSDK",
+        "unityToolsVersion": "",
+        "unityEngineVersion": "2022.3.50f1c1",
+        "arch": ""
     },
-    "publishType": "AndroidNativeOnly",
-    "starkSdkVersion": "Without StarkSDK",
-    "unityToolsVersion": "",
-    "unityEngineVersion": "2022.3.50f1c1",
-    "arch": ""
-  }
+    "setting": {
+        "urlCheck": true
+    }
 }

@@ -22,6 +22,8 @@ public class SaveDataManager : MonoBehaviour
     private const string KEY_CURRENT_COINS = "CurrentCoins";
     private const string KEY_DAILY_CHALLENGE_DATE = "DailyChallengeDate";
     private const string KEY_DAILY_CHALLENGE_COUNT = "DailyChallengeCount";
+    private const string KEY_DAILY_CHALLENGE_HIGHEST_SCORE = "DailyChallengeHighestScore";
+    private const string KEY_SIDEBAR_REWARD_DATE = "SidebarRewardDate";
 
     private void Awake()
     {
@@ -201,6 +203,46 @@ public class SaveDataManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 保存侧边栏奖励领取日期（格式：yyyy-MM-dd）
+    /// </summary>
+    public void SaveSidebarRewardDate(string date)
+    {
+        PlayerPrefs.SetString(KEY_SIDEBAR_REWARD_DATE, date);
+        PlayerPrefs.Save();
+        Debug.Log($"[SaveDataManager] 保存侧边栏奖励领取日期: {date}");
+    }
+
+    /// <summary>
+    /// 加载侧边栏奖励领取日期
+    /// </summary>
+    public string LoadSidebarRewardDate(string defaultValue = "")
+    {
+        string date = PlayerPrefs.GetString(KEY_SIDEBAR_REWARD_DATE, defaultValue);
+        Debug.Log($"[SaveDataManager] 加载侧边栏奖励领取日期: {date}");
+        return date;
+    }
+
+    /// <summary>
+    /// 保存每日挑战历史最高分
+    /// </summary>
+    public void SaveDailyChallengeHighestScore(int score)
+    {
+        PlayerPrefs.SetInt(KEY_DAILY_CHALLENGE_HIGHEST_SCORE, score);
+        PlayerPrefs.Save();
+        Debug.Log($"[SaveDataManager] 保存每日挑战历史最高分: {score}");
+    }
+
+    /// <summary>
+    /// 加载每日挑战历史最高分
+    /// </summary>
+    public int LoadDailyChallengeHighestScore(int defaultValue = 0)
+    {
+        int score = PlayerPrefs.GetInt(KEY_DAILY_CHALLENGE_HIGHEST_SCORE, defaultValue);
+        Debug.Log($"[SaveDataManager] 加载每日挑战历史最高分: {score}");
+        return score;
+    }
+
+    /// <summary>
     /// 清除所有存档数据
     /// </summary>
     public void ClearAllData()
@@ -213,6 +255,8 @@ public class SaveDataManager : MonoBehaviour
         PlayerPrefs.DeleteKey(KEY_CURRENT_COINS);
         PlayerPrefs.DeleteKey(KEY_DAILY_CHALLENGE_DATE);
         PlayerPrefs.DeleteKey(KEY_DAILY_CHALLENGE_COUNT);
+        PlayerPrefs.DeleteKey(KEY_DAILY_CHALLENGE_HIGHEST_SCORE);
+        PlayerPrefs.DeleteKey(KEY_SIDEBAR_REWARD_DATE);
         PlayerPrefs.Save();
         Debug.Log("[SaveDataManager] 清除所有存档数据");
     }

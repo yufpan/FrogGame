@@ -16,7 +16,17 @@ public class ADManager : MonoBehaviour
     /// <summary>
     /// 激励广告ID
     /// </summary>
-    private const string REWARDED_AD_ID = "90e90tvhwb3cfhd4ig";
+    private const string REWARDED_AD_ID = "3q5u0po6f9i1gj01m8";
+
+    /// <summary>
+    /// 广告实例
+    /// </summary>
+    private TTRewardedVideoAd _rewardVideoAd;
+
+    /// <summary>
+    /// 广告加载状态
+    /// </summary>
+    private bool _rewardVideoLoaded = false;
 
     /// <summary>
     /// 广告是否正在播放
@@ -33,6 +43,13 @@ public class ADManager : MonoBehaviour
     /// </summary>
     private Action<string> _onFailedCallback;
 
+    /// <summary>
+    /// 弱网重试配置
+    /// </summary>
+    private const int MAX_RETRY_COUNT = 3;
+    private const float RETRY_DELAY = 2f;
+    private int _retryCount = 0;
+
     private void Awake()
     {
         // 单例模式：让 ADManager 在场景切换间常驻
@@ -43,6 +60,85 @@ public class ADManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        InitializeRewardVideoAd();
+    }
+
+    /// <summary>
+    /// 初始化激励视频广告
+    /// </summary>
+    private void InitializeRewardVideoAd()
+    {
+        if (_rewardVideoAd != null) return;
+
+#if !UNITY_EDITOR
+        _rewardVideoAd = TTAdManager.Instance.ShowVideoAdNew(REWARDED_AD_ID);
+        _rewardVideoLoaded = false;
+        _retryCount = 0;
+
+        _rewardVideoAd.OnClose += (isEnded, count) =>
+        {
+            _isAdPlaying = false;
+            _rewardVideoLoaded = false;
+            
+            if (isEnded)
+            {
+                // 用户看完了广告，给予奖励
+                Debug.Log("[ADManager] 激励广告播放完成，用户获得奖励");
+                _onRewardedCallback?.Invoke();
+            }
+            else
+            {
+                // 用户没有看完广告就关闭了
+                Debug.Log("[ADManager] 激励广告未播放完成，用户关闭了广告");
+                _onFailedCallback?.Invoke("用户未看完广告");
+            }
+            
+            // 清理回调
+            _onRewardedCallback = null;
+            _onFailedCallback = null;
+        };
+
+        _rewardVideoAd.OnError += (errorCode, errorMessage) =>
+        {
+            _isAdPlaying = false;
+            _rewardVideoLoaded = false;
+            Debug.LogError($"[ADManager] 激励广告错误: errCode={errorCode}, errMsg={errorMessage}");
+            _onFailedCallback?.Invoke($"广告错误: {errorMessage} (错误码: {errorCode})");
+            
+            // 清理回调
+            _onRewardedCallback = null;
+            _onFailedCallback = null;
+            
+            // 弱网重试逻辑
+            if (_retryCount < MAX_RETRY_COUNT)
+            {
+                _retryCount++;
+                StartCoroutine(RetryLoadRewardVideo());
+            }
+        };
+
+        _rewardVideoAd.OnLoad += () =>
+        {
+            _rewardVideoLoaded = true;
+            _retryCount = 0; // 重置重试计数
+            Debug.Log($"[ADManager] 激励广告加载完成，广告ID: {REWARDED_AD_ID}");
+        };
+
+        Debug.Log($"[ADManager] 初始化激励视频广告: {REWARDED_AD_ID}");
+#endif
+    }
+
+    /// <summary>
+    /// 重试加载激励视频广告
+    /// </summary>
+    private System.Collections.IEnumerator RetryLoadRewardVideo()
+    {
+        yield return new WaitForSeconds(RETRY_DELAY);
+        if (_rewardVideoAd != null)
+        {
+            Debug.Log($"[ADManager] 重试加载激励广告 (第 {_retryCount} 次)");
+            _rewardVideoAd.Load();
+        }
     }
 
     /// <summary>
@@ -63,87 +159,27 @@ public class ADManager : MonoBehaviour
         _onFailedCallback = onFailed;
 
 #if !UNITY_EDITOR
-        try
+        if (_rewardVideoAd == null)
         {
-            _isAdPlaying = true;
-            
-            // 使用TT.CreateRewardedVideoAd创建并显示激励视频广告
-            // 该方法会自动创建并显示广告，如果广告未加载会自动加载
-            TT.CreateRewardedVideoAd(
-                REWARDED_AD_ID,
-                OnAdClosed,
-                OnAdError,
-                false,  // multiton: 不开启再得广告模式
-                null,   // multitonRewardMsg: 不需要
-                0,      // multitonRewardTime: 不需要
-                false   // progressTip: 不开启进度提醒
-            );
-            
-            Debug.Log($"[ADManager] 开始播放激励广告，广告ID: {REWARDED_AD_ID}");
+            InitializeRewardVideoAd();
         }
-        catch (Exception e)
+
+        _isAdPlaying = true;
+
+        if (!_rewardVideoLoaded)
         {
-            _isAdPlaying = false;
-            Debug.LogError($"[ADManager] 播放广告失败: {e.Message}");
-            onFailed?.Invoke(e.Message);
+            Debug.Log("[ADManager] 广告未加载，开始加载广告");
+            _rewardVideoAd.Load();
         }
+
+        Debug.Log($"[ADManager] 开始播放激励广告，广告ID: {REWARDED_AD_ID}");
+        _rewardVideoAd.Show();
 #else
         // 编辑器模式下模拟广告播放
         Debug.Log("[ADManager] 编辑器模式：模拟播放激励广告");
         _isAdPlaying = true;
         StartCoroutine(SimulateAdPlayback());
 #endif
-    }
-
-    /// <summary>
-    /// 广告关闭回调（由TTSDK调用）
-    /// </summary>
-    /// <param name="isComplete">是否播放完成（用户看完广告）</param>
-    /// <param name="errCode">错误码（如果有关闭错误）</param>
-    private void OnAdClosed(bool isComplete, int errCode)
-    {
-        _isAdPlaying = false;
-        
-        if (isComplete)
-        {
-            // 用户看完了广告，给予奖励
-            Debug.Log("[ADManager] 激励广告播放完成，用户获得奖励");
-            _onRewardedCallback?.Invoke();
-        }
-        else
-        {
-            // 用户没有看完广告就关闭了，或者有错误
-            if (errCode != 0)
-            {
-                Debug.LogWarning($"[ADManager] 激励广告关闭，错误码: {errCode}");
-                _onFailedCallback?.Invoke($"广告关闭错误，错误码: {errCode}");
-            }
-            else
-            {
-                Debug.Log("[ADManager] 激励广告未播放完成，用户关闭了广告");
-                _onFailedCallback?.Invoke("用户未看完广告");
-            }
-        }
-        
-        // 清理回调
-        _onRewardedCallback = null;
-        _onFailedCallback = null;
-    }
-
-    /// <summary>
-    /// 广告错误回调（由TTSDK调用）
-    /// </summary>
-    /// <param name="errCode">错误码</param>
-    /// <param name="errMsg">错误信息</param>
-    private void OnAdError(int errCode, string errMsg)
-    {
-        _isAdPlaying = false;
-        Debug.LogError($"[ADManager] 激励广告错误: errCode={errCode}, errMsg={errMsg}");
-        _onFailedCallback?.Invoke($"广告错误: {errMsg} (错误码: {errCode})");
-        
-        // 清理回调
-        _onRewardedCallback = null;
-        _onFailedCallback = null;
     }
 
 #if UNITY_EDITOR
@@ -168,5 +204,15 @@ public class ADManager : MonoBehaviour
     public bool IsAdAvailable()
     {
         return !_isAdPlaying;
+    }
+
+    private void OnDestroy()
+    {
+        // 清理广告实例
+        if (_rewardVideoAd != null)
+        {
+            _rewardVideoAd.Destroy();
+            _rewardVideoAd = null;
+        }
     }
 }

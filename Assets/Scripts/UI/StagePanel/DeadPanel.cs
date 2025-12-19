@@ -51,11 +51,24 @@ public class DeadPanel : BasePanel
     private void OnBackButtonClick()
     {
         PlayButtonSound(true); // 播放关闭按钮音效
-        // 打开 ResultPanel
-            if (UIManager.Instance != null)
+        
+        // 检查是否为每日挑战模式
+        bool isDailyChallenge = GameManager.Instance != null && 
+                                GameManager.Instance.CurrentGameMode == GameManager.GameMode.DailyChallenge;
+        
+        if (UIManager.Instance != null)
+        {
+            if (isDailyChallenge)
             {
-            UIManager.Instance.OpenPanel("ResultPanel");
+                // 每日挑战模式：打开 WinPanel 显示每日挑战结算
+                UIManager.Instance.OpenPanel("WinPanel");
             }
+            else
+            {
+                // 常规关卡模式：打开 ResultPanel
+                UIManager.Instance.OpenPanel("ResultPanel");
+            }
+        }
         
         // 关闭 DeadPanel 和 StagePanel
         if (UIManager.Instance != null)
@@ -71,8 +84,34 @@ public class DeadPanel : BasePanel
     private void OnRetryButtonClick()
     {
         PlayButtonSound(false); // 播放普通按钮音效
-        Debug.Log("[DeadPanel] 重试：恢复血量");
         
+        // 检查广告是否可用
+        if (ADManager.Instance == null || !ADManager.Instance.IsAdAvailable())
+        {
+            Debug.LogWarning("[DeadPanel] 广告不可用，无法复活");
+            return;
+        }
+
+        // 播放激励广告，观看完成后执行复活逻辑
+        ADManager.Instance.ShowRewardedAd(
+            onRewarded: () =>
+            {
+                // 广告观看完成，执行复活逻辑
+                Debug.Log("[DeadPanel] 广告观看完成，执行复活");
+                ExecuteRevive();
+            },
+            onFailed: (errorMsg) =>
+            {
+                Debug.LogWarning($"[DeadPanel] 广告播放失败: {errorMsg}");
+            }
+        );
+    }
+
+    /// <summary>
+    /// 执行复活逻辑
+    /// </summary>
+    private void ExecuteRevive()
+    {
         // 恢复血量到初始值
         if (StageManager.Instance != null)
         {

@@ -73,6 +73,49 @@ public class GetEnergyPanel : BasePanel
     {
         PlayButtonSound(false); // 播放普通按钮音效
 
+        // 检查广告是否可用
+        if (ADManager.Instance == null || !ADManager.Instance.IsAdAvailable())
+        {
+            Debug.LogWarning("[GetEnergyPanel] 广告不可用，无法获取体力");
+            if (UIManager.Instance != null)
+            {
+                ToastPanel toastPanel = UIManager.Instance.GetPanel<ToastPanel>("ToastPanel");
+                if (toastPanel != null)
+                {
+                    toastPanel.ShowToast("广告暂时不可用，请稍后再试");
+                }
+            }
+            return;
+        }
+
+        // 播放激励广告，观看完成后执行获取体力逻辑
+        ADManager.Instance.ShowRewardedAd(
+            onRewarded: () =>
+            {
+                // 广告观看完成，执行获取体力逻辑
+                Debug.Log("[GetEnergyPanel] 广告观看完成，执行获取体力");
+                ExecuteGetEnergy();
+            },
+            onFailed: (errorMsg) =>
+            {
+                Debug.LogWarning($"[GetEnergyPanel] 广告播放失败: {errorMsg}");
+                if (UIManager.Instance != null)
+                {
+                    ToastPanel toastPanel = UIManager.Instance.GetPanel<ToastPanel>("ToastPanel");
+                    if (toastPanel != null)
+                    {
+                        toastPanel.ShowToast($"广告播放失败：{errorMsg}");
+                    }
+                }
+            }
+        );
+    }
+
+    /// <summary>
+    /// 执行获取体力逻辑
+    /// </summary>
+    private void ExecuteGetEnergy()
+    {
         if (GameManager.Instance != null)
         {
             // 尝试获取能量
@@ -86,7 +129,14 @@ public class GetEnergyPanel : BasePanel
             else
             {
                 Debug.LogWarning("[GetEnergyPanel] 获取能量失败，今日次数已用完");
-                // 可以在这里显示提示信息
+                if (UIManager.Instance != null)
+                {
+                    ToastPanel toastPanel = UIManager.Instance.GetPanel<ToastPanel>("ToastPanel");
+                    if (toastPanel != null)
+                    {
+                        toastPanel.ShowToast("今日获取次数已用完");
+                    }
+                }
             }
         }
     }
