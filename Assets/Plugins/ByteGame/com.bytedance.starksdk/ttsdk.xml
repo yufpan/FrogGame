@@ -445,6 +445,11 @@
             错误码
             </summary>
         </member>
+        <member name="P:TTSDK.UNBridgeLib.BridgeMsg.CodeV2">
+            <summary>
+            新版本错误码
+            </summary>
+        </member>
         <member name="P:TTSDK.UNBridgeLib.BridgeMsg.Source">
             <summary>
             消息来源
@@ -1419,6 +1424,17 @@
             取消监听用户点击右上角菜单的“转发”按钮时触发的事件。 https://microapp.bytedance.com/docs/zh-CN/mini-game/develop/api/retweet/tt-off-share-app-message
             </summary>
         </member>
+        <member name="M:TTSDK.TTShare.OnShareMessageResult(TTSDK.TTShare.OnShareMessageResultCallback)">
+            <summary>
+            监听平台触发分享的结果，目前仅用于排行榜邀请、右上角分享
+            </summary>
+            <param name="callback"> callback 携带 ShareMessageResult 类型的参数</param>
+        </member>
+        <member name="M:TTSDK.TTShare.OffShareMessageResult(TTSDK.TTShare.OnShareMessageResultCallback)">
+            <summary>
+            取消监听平台触发分享的结果
+            </summary>
+        </member>
         <member name="M:TTSDK.TTShare.ShareMessageToFriend(TTSDK.UNBridgeLib.LitJson.JsonData,TTSDK.TTShare.OnShareSuccessCallback,TTSDK.TTShare.OnShareFailedCallback,TTSDK.TTShare.OnShareCancelledCallback)">
             <summary>
             通用分享
@@ -2341,6 +2357,18 @@
         <member name="M:TTSDK.ITTAPI.GetIncentiveTaskShareInfo(TTSDK.TTGetIncentiveTaskShareInfoParam)">
             <summary>
             获取社交分享的激励信息
+            </summary>
+            <param name="param"></param>
+        </member>
+        <member name="M:TTSDK.ITTAPI.CheckUserIMPermission(TTSDK.TTCheckUserIMPermissionInfoParam)">
+            <summary>
+            查询用户是否已授权抖音IM
+            </summary>
+            <param name="param"></param>
+        </member>
+        <member name="M:TTSDK.ITTAPI.OpenIM(TTSDK.TTOpenIMInfoParam)">
+            <summary>
+            打开抖音IM会话
             </summary>
             <param name="param"></param>
         </member>
@@ -5018,13 +5046,12 @@
         </member>
         <member name="M:TTSDK.TT.OpenAwemeCustomerService(TTSDK.UNBridgeLib.LitJson.JsonData,System.Action,System.Action{System.Int32,System.String})">
             <summary>
-            通过客服页面发起支付
-            接口说明：https://bytedance.feishu.cn/docx/doxcnUkE86LjFTFdTJREIEGT9bb
+            通过客服页面发起钻石支付
             </summary>
             <param name="options"> JsonData内容如下 
             buyQuantity     int  必填   金币购买数量，金币数量必须满足：金币数量*金币单价 = 限定价格等级（详见下方 buyQuantity 限制说明。开发者可以在字节小游戏平台的“支付”tab 设置游戏币单价）
             customId        string  必填   游戏开发者自定义的唯一订单号，订单支付成功后通过服务端支付结果回调回传
-            currencyType    string  非必填 币种, 目前仅为"CNY"
+            currencyType    string  非必填 币种, 目前仅为"DIAMOND"
             zoneId	        string  非必填 游戏服务区 id，默认值为1，开发者自定义。游戏不分大区则默认填写"1"。如果应用支持多角色，则角色 ID 接在分区 ID 后，用"_"连接
             extraInfo	    string  非必填 游戏开发者自定义的其他信息，订单支付成功后通过服务端支付结果回调回传。字符串长度最大不能超过 256。（强烈建议传入）
             goodType        int  非必填（道具直购场景必填） 默认游戏币。 游戏币：0 | 1，道具直购：2。若goodType为道具直购场景，不可传buyQuantity
@@ -5330,6 +5357,16 @@
         <member name="M:TTSDK.TT.OffShareAppMessage(TTSDK.TTShare.OnshareAppMessageCallback)">
             <summary>
             取消监听用户点击右上角菜单的“转发”按钮时触发的事件。 https://microapp.bytedance.com/docs/zh-CN/mini-game/develop/api/retweet/tt-off-share-app-message
+            </summary>
+        </member>
+        <member name="M:TTSDK.TT.OnShareMessageResult(TTSDK.TTShare.OnShareMessageResultCallback)">
+            <summary>
+            监听平台触发分享的结果，目前仅用于排行榜邀请、右上角分享
+            </summary>
+        </member>
+        <member name="M:TTSDK.TT.OffShareMessageResult(TTSDK.TTShare.OnShareMessageResultCallback)">
+            <summary>
+            取消监听平台触发分享的结果，目前仅用于排行榜邀请、右上角分享
             </summary>
         </member>
         <member name="M:TTSDK.TT.ShareMessageToFriend(TTSDK.UNBridgeLib.LitJson.JsonData,TTSDK.TTShare.OnShareSuccessCallback,TTSDK.TTShare.OnShareFailedCallback,TTSDK.TTShare.OnShareCancelledCallback)">
@@ -6340,6 +6377,18 @@
             </summary>
             <param name="param"></param>
         </member>
+        <member name="M:TTSDK.TT.CheckUserIMPermission(TTSDK.TTCheckUserIMPermissionInfoParam)">
+            <summary>
+            查询用户是否已授权抖音IM
+            </summary>
+            <param name="param"></param>
+        </member>
+        <member name="M:TTSDK.TT.OpenIM(TTSDK.TTOpenIMInfoParam)">
+            <summary>
+            打开抖音IM会话
+            </summary>
+            <param name="param"></param>
+        </member>
         <member name="M:TTSDK.TT.ShowToast(TTSDK.TTShowToastParam)">
             <summary>
             显示灰色背景的消息提示框。
@@ -6416,6 +6465,36 @@
             <param name="successCallback">执行成功的回调函数，会返回平台订单号,例如：{"orderId":"xxxxx"}</param>
             <param name="completeCallback">接口调用成功的回调函数</param>
             <param name="errorCallback">接口调用失败的回调函数</param>
+        </member>
+        <member name="T:TTSDK.TTCheckUserIMPermissionSuccessResult">
+            <summary>
+            检查用户是否有IM权限结果
+            </summary>
+        </member>
+        <member name="F:TTSDK.TTCheckUserIMPermissionSuccessResult.hasPermission">
+            <summary>
+            是否有IM权限
+            </summary>
+        </member>
+        <member name="T:TTSDK.TTCheckUserIMPermissionInfoParam">
+            <summary>
+            检查用户是否有IM权限参数
+            </summary>
+        </member>
+        <member name="T:TTSDK.TTOpenIMSuccessResult">
+            <summary>
+            打开IM成功结果
+            </summary>
+        </member>
+        <member name="T:TTSDK.TTOpenIMInfoParam">
+            <summary>
+            打开IM参数
+            </summary>
+        </member>
+        <member name="F:TTSDK.TTOpenIMInfoParam.openId">
+            <summary>
+            打开IM的目标用户ID
+            </summary>
         </member>
         <member name="T:TTSDK.OnKeyDownListenerResult">
             <summary>
@@ -6894,7 +6973,7 @@
         </member>
         <member name="F:TTSDK.OpenAwemeCustomerServiceParam.CurrencyType">
             <summary>
-            非必填 币种, 目前仅为"CNY"
+            非必填 币种, 目前仅为"DIAMOND"
             </summary>
         </member>
         <member name="F:TTSDK.OpenAwemeCustomerServiceParam.ZoneId">
@@ -8270,6 +8349,31 @@
         <member name="T:TTSDK.ErrorInfo">
             <summary>
             错误信息
+            </summary>
+        </member>
+        <member name="F:TTSDK.ErrorInfo.ErrorCode">
+            <summary>
+            旧版本错误码 errNo
+            </summary>
+        </member>
+        <member name="F:TTSDK.ErrorInfo.ErrMsg">
+            <summary>
+            错误信息
+            </summary>
+        </member>
+        <member name="F:TTSDK.ErrorInfo.ErrorType">
+            <summary>
+            错误类型
+            </summary>
+        </member>
+        <member name="F:TTSDK.ErrorInfo.errorCode">
+            <summary>
+            错误码三期新增字段 errorCode
+            </summary>
+        </member>
+        <member name="F:TTSDK.ErrorInfo.errMsg">
+            <summary>
+            等价于ErrMsg，用于api规范化
             </summary>
         </member>
         <member name="M:TTSDK.ErrorTypeUtils.Parse(System.String)">

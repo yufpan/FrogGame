@@ -5,6 +5,8 @@
         public string callbackId; //回调id,调用者不需要关注
         public string errMsg;
         public int errCode;
+        public int errorCode;
+        public string errorType;
     }
 
     public class TTBaseActionParam<T>
